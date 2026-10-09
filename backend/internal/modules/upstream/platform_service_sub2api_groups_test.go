@@ -233,6 +233,95 @@ func TestFetchSub2APIMetrics_UsesOverriddenMultiplier(t *testing.T) {
 	}
 }
 
+func TestFetchSub2APIMetrics_FallsBackWhenConsumptionResponseFails(t *testing.T) {
+	tests := []struct {
+		name             string
+		dashboardPayload any
+		dashboardStatus  int
+	}{
+		{name: "http failure", dashboardStatus: http.StatusNotFound},
+		{name: "business failure", dashboardPayload: map[string]any{"code": 1, "message": "unsupported"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/api/v1/auth/me":
+					writeJSON(w, map[string]any{"data": map[string]any{"balance": 10.0, "total_recharged": 20.0}})
+				case "/api/v1/usage/dashboard/stats":
+					if tt.dashboardStatus != 0 {
+						w.WriteHeader(tt.dashboardStatus)
+						return
+					}
+					writeJSON(w, tt.dashboardPayload)
+				case "/api/v1/usage/stats":
+					if got := r.URL.Query().Get("timezone"); got != "Asia/Shanghai" {
+						t.Fatalf("fallback timezone = %q, want Asia/Shanghai", got)
+					}
+					if r.URL.Query().Get("start_date") == "" || r.URL.Query().Get("start_date") != r.URL.Query().Get("end_date") {
+						t.Fatalf("fallback must query one date, got %q", r.URL.RawQuery)
+					}
+					writeJSON(w, map[string]any{"code": 0, "data": map[string]any{"total_actual_cost": 3.25}})
+				case "/api/v1/groups/available":
+					writeJSON(w, map[string]any{"data": []map[string]any{{"id": 1, "name": "default", "rate_multiplier": 1.0}}})
+				case "/api/v1/groups/rates":
+					writeJSON(w, map[string]any{"code": 0, "data": map[string]any{}})
+				default:
+					t.Fatalf("unexpected path: %s", r.URL.Path)
+				}
+			}))
+			defer server.Close()
+
+			service := NewPlatformService(NewHTTPClient(server.Client()))
+			metrics, err := service.fetchSub2APIMetrics(Session{
+				Platform: PlatformSub2API, BaseURL: server.URL, AccessToken: "token",
+			})
+			if err != nil {
+				t.Fatalf("fallback should preserve metrics, got error: %v", err)
+			}
+			if metrics.Balance.Value == nil || *metrics.Balance.Value != 10 {
+				t.Fatalf("balance = %v, want 10", metrics.Balance.Value)
+			}
+			if metrics.TodayConsume.Value == nil || *metrics.TodayConsume.Value != 3.25 {
+				t.Fatalf("today consume = %v, want 3.25", metrics.TodayConsume.Value)
+			}
+		})
+	}
+}
+
+func TestFetchSub2APIMetrics_KeepsBalanceWhenConsumptionFallbackFails(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/v1/auth/me":
+			writeJSON(w, map[string]any{"data": map[string]any{"balance": 10.0}})
+		case "/api/v1/usage/dashboard/stats", "/api/v1/usage/stats":
+			w.WriteHeader(http.StatusNotFound)
+		case "/api/v1/groups/available":
+			writeJSON(w, map[string]any{"data": []map[string]any{{"id": 1, "name": "default", "rate_multiplier": 1.0}}})
+		case "/api/v1/groups/rates":
+			writeJSON(w, map[string]any{"data": map[string]any{}})
+		default:
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	service := NewPlatformService(NewHTTPClient(server.Client()))
+	metrics, err := service.fetchSub2APIMetrics(Session{
+		Platform: PlatformSub2API, BaseURL: server.URL, AccessToken: "token",
+	})
+	if err != nil {
+		t.Fatalf("consumption failure should not fail metrics: %v", err)
+	}
+	if metrics.Balance.Value == nil || *metrics.Balance.Value != 10 {
+		t.Fatalf("balance = %v, want 10", metrics.Balance.Value)
+	}
+	if metrics.TodayConsume.Value != nil {
+		t.Fatalf("today consume = %v, want nil", metrics.TodayConsume.Value)
+	}
+}
+
 // TestSub2APIGroupRateOverrides 覆盖 sub2APIGroupRateOverrides helper 对上游几种常见
 // payload 形态的解析，以及无效条目的容错行为。
 func TestSub2APIGroupRateOverrides(t *testing.T) {

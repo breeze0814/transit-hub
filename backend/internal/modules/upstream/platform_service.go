@@ -1274,11 +1274,7 @@ func (s *PlatformService) fetchSub2APIMetrics(session Session) (Metrics, error) 
 		log.Printf("[sub2api-metrics] /api/v1/auth/me 失败 base_url=%s err=%v", session.BaseURL, err)
 		return Metrics{}, err
 	}
-	stats, err := s.httpClient.requestJSON(session.BaseURL+"/api/v1/usage/dashboard/stats", authOptions)
-	if err != nil {
-		log.Printf("[sub2api-metrics] /api/v1/usage/dashboard/stats 失败 base_url=%s err=%v", session.BaseURL, err)
-		return Metrics{}, err
-	}
+	statsData := s.fetchSub2APIUsageMetrics(session, authOptions)
 	groups, err := s.fetchSub2APIAvailableGroupsWithRates(session)
 	if err != nil {
 		log.Printf("[sub2api-metrics] 分组列表拉取失败 base_url=%s err=%v", session.BaseURL, err)
@@ -1286,11 +1282,10 @@ func (s *PlatformService) fetchSub2APIMetrics(session Session) (Metrics, error) 
 	}
 
 	meData := dataRecord(me.Payload)
-	statsData := dataRecord(stats.Payload)
 	balance := firstNumber(meData, []string{"balance"})
-	totalRecharged := firstNumber(meData, []string{"total_recharged"})
+	totalRecharged := firstNumber(meData, []string{"total_recharged", "totalRecharged"})
 	if totalRecharged == nil || *totalRecharged == 0 {
-		if totalActualCost := firstNumber(statsData, []string{"total_actual_cost"}); totalActualCost != nil && balance != nil {
+		if totalActualCost := firstNumber(statsData, []string{"total_actual_cost", "totalActualCost"}); totalActualCost != nil && balance != nil {
 			fallbackTotal := *totalActualCost + *balance
 			totalRecharged = &fallbackTotal
 		}
@@ -1302,11 +1297,74 @@ func (s *PlatformService) fetchSub2APIMetrics(session Session) (Metrics, error) 
 	}
 	return Metrics{
 		Balance:         metric(balance),
-		TodayConsume:    metric(firstNumber(statsData, []string{"today_actual_cost"})),
+		TodayConsume:    metric(firstNumber(statsData, []string{"today_actual_cost", "todayActualCost"})),
 		HistoryRecharge: metric(totalRecharged),
 		Group:           firstGroup,
 		Groups:          groups,
 	}, nil
+}
+
+// fetchSub2APIUsageMetrics treats consumption as an optional metric. Some Sub2API
+// versions do not expose dashboard stats, and some return a business-level error
+// with HTTP 200. In both cases, fall back to the date-range endpoint and preserve
+// the rest of the site metrics when consumption is unavailable.
+func (s *PlatformService) fetchSub2APIUsageMetrics(session Session, options requestOptions) map[string]any {
+	dashboard, dashboardErr := s.httpClient.requestJSON(session.BaseURL+"/api/v1/usage/dashboard/stats", options)
+	if dashboardErr == nil {
+		if envelopeErr := sub2APIEnvelopeError(dashboard.Payload); envelopeErr == nil {
+			data := dataRecord(dashboard.Payload)
+			if firstNumber(data, []string{"today_actual_cost", "todayActualCost"}) != nil {
+				return data
+			}
+			// A successful dashboard response without today's cost is incomplete;
+			// continue to the date-range endpoint for a complete value.
+			dashboardErr = fmt.Errorf("dashboard stats response has no today cost")
+		} else {
+			dashboardErr = envelopeErr
+		}
+	}
+
+	today := time.Now().In(time.FixedZone("Asia/Shanghai", 8*60*60)).Format("2006-01-02")
+	values := url.Values{}
+	values.Set("start_date", today)
+	values.Set("end_date", today)
+	values.Set("timezone", "Asia/Shanghai")
+	fallbackURL := session.BaseURL + "/api/v1/usage/stats?" + values.Encode()
+	fallback, fallbackErr := s.httpClient.requestJSON(fallbackURL, options)
+	if fallbackErr == nil {
+		if envelopeErr := sub2APIEnvelopeError(fallback.Payload); envelopeErr == nil {
+			data := dataRecord(fallback.Payload)
+			if total := firstNumber(data, []string{"total_actual_cost", "totalActualCost"}); total != nil && firstNumber(data, []string{"today_actual_cost", "todayActualCost"}) == nil {
+				data["today_actual_cost"] = *total
+			}
+			return data
+		} else {
+			fallbackErr = envelopeErr
+		}
+	}
+
+	log.Printf("[sub2api-metrics] consumption unavailable base_url=%s dashboard_err=%v fallback_err=%v", session.BaseURL, dashboardErr, fallbackErr)
+	return map[string]any{}
+}
+
+// sub2APIEnvelopeError validates the optional Sub2API business status field.
+// Older deployments omit code, so absence remains compatible with existing APIs.
+func sub2APIEnvelopeError(payload any) error {
+	record, ok := payload.(map[string]any)
+	if !ok {
+		return nil
+	}
+	if rawCode, exists := record["code"]; exists {
+		code := readNumber(rawCode)
+		if code != nil && *code != 0 {
+			message := firstString(record, []string{"message", "msg"})
+			if message != nil && strings.TrimSpace(*message) != "" {
+				return fmt.Errorf("sub2api response code %.0f: %s", *code, strings.TrimSpace(*message))
+			}
+			return fmt.Errorf("sub2api response code %.0f", *code)
+		}
+	}
+	return nil
 }
 
 func cookieHeader(headers http.Header) string {
