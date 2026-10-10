@@ -20,7 +20,6 @@ type connectionContext struct {
 	upstreamSession upstream.Session
 	groupType       string
 	groupName       string
-	multiplierLabel string
 }
 
 func addToPricingMapping(value *bool) bool {
@@ -49,7 +48,7 @@ func (s *Service) prepareConnectionContext(ctx context.Context, userID, siteID, 
 		return connectionContext{}, requestError(ErrorRequest)
 	}
 
-	groupType, multiplierLabel := resolveGroupInfo(upstreamSite.Metrics.Groups, strings.TrimSpace(groupID))
+	groupType := resolveGroupType(upstreamSite.Metrics.Groups, strings.TrimSpace(groupID))
 	if groupType == "" {
 		groupType = strings.ToLower(strings.TrimSpace(requestedType))
 	}
@@ -73,7 +72,6 @@ func (s *Service) prepareConnectionContext(ctx context.Context, userID, siteID, 
 		upstreamSession: *upstreamSite.Session,
 		groupType:       groupType,
 		groupName:       resolvedName,
-		multiplierLabel: multiplierLabel,
 	}, nil
 }
 
@@ -263,11 +261,7 @@ func (s *Service) createAdminResource(connectionCtx connectionContext, requested
 	if err != nil {
 		return "", "", requestError(ErrorRequest)
 	}
-	rateLabel := connectionCtx.multiplierLabel
-	if rateLabel == "" {
-		rateLabel = connectionCtx.groupName
-	}
-	name := fmt.Sprintf("%s-【%s】-%s", groupTypePrefix(connectionCtx.groupType), connectionCtx.upstreamSite.Name, rateLabel)
+	name := fmt.Sprintf("%s-%s", connectionCtx.upstreamSite.Name, connectionCtx.groupName)
 	payload := buildAccountPayload(connectionCtx.groupType, connectionCtx.upstreamSite.BaseURL, key, numericGroupIDs, name)
 	id, err := s.platformService.CreateSub2APIAdminAccount(connectionCtx.state.Session, payload)
 	return id, name, err

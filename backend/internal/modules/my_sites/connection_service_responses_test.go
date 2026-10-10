@@ -9,7 +9,7 @@ import (
 	"transithub/backend/internal/modules/upstream"
 )
 
-func TestCreateAdminResourceSub2APIResponsesMode(t *testing.T) {
+func TestCreateAdminResourceSub2APIAccountPayload(t *testing.T) {
 	tests := []struct {
 		groupType string
 		wantMode  string
@@ -48,16 +48,22 @@ func TestCreateAdminResourceSub2APIResponsesMode(t *testing.T) {
 				groupType:    tt.groupType,
 				groupName:    "vip",
 			}
-			id, _, err := service.createAdminResource(connectionCtx, 0, []string{"7"}, "sk-test")
+			id, name, err := service.createAdminResource(connectionCtx, 0, []string{"7"}, "sk-test")
 			if err != nil {
 				t.Fatalf("create admin resource: %v", err)
 			}
 			if id != "22" {
 				t.Fatalf("account id = %q, want 22", id)
 			}
+			if name != "source-vip" {
+				t.Errorf("account name = %q, want source-vip", name)
+			}
 
 			select {
 			case payload := <-requests:
+				if payload["name"] != "source-vip" {
+					t.Errorf("account payload name = %v, want source-vip", payload["name"])
+				}
 				extra, _ := payload["extra"].(map[string]any)
 				mode, present := extra["openai_responses_mode"]
 				if tt.wantMode == "" {

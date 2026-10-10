@@ -785,35 +785,17 @@ func randomKeyPrefix() string {
 	return keyPrefixes[int(b[0])%len(keyPrefixes)]
 }
 
-// groupTypePrefix 根据分组类型返回账号名称前缀（A=OpenAI, B=Anthropic, C=Gemini, D=Antigravity）。
-func groupTypePrefix(groupType string) string {
-	switch strings.ToLower(groupType) {
-	case "openai":
-		return "A"
-	case "anthropic":
-		return "B"
-	case "gemini":
-		return "C"
-	case "antigravity":
-		return "D"
-	default:
-		return "X"
-	}
-}
-
-// resolveGroupInfo 从上游站点缓存的分组列表中查找指定分组的平台类型和倍率显示文本。
-// 返回小写的平台名（如 "openai"、"anthropic"）和倍率显示文本（如 "1.5x"），未找到时返回空字符串。
-func resolveGroupInfo(groups []upstream.GroupInfo, groupID string) (groupType string, multiplierDisplay string) {
+// resolveGroupType 从上游站点缓存中查找分组的平台类型，返回小写平台名。
+func resolveGroupType(groups []upstream.GroupInfo, groupID string) string {
 	for _, g := range groups {
 		if g.ID == groupID {
-			if g.Platform != nil && strings.TrimSpace(*g.Platform) != "" {
-				groupType = strings.ToLower(strings.TrimSpace(*g.Platform))
+			if g.Platform != nil {
+				return strings.ToLower(strings.TrimSpace(*g.Platform))
 			}
-			multiplierDisplay = g.MultiplierDisplay
-			return
+			return ""
 		}
 	}
-	return
+	return ""
 }
 
 // stringsToInts 将字符串切片转为整数切片（Sub2API 接口要求 group_ids 为整数数组）。

@@ -88,7 +88,7 @@ func TestManagedConnectionOperationsUseEachSidePlatform(t *testing.T) {
 				connectionCtx := connectionContext{
 					state:        &State{Session: adminSession},
 					upstreamSite: &upstream.Site{Name: "source", BaseURL: "https://provider.example"},
-					groupType:    "openai", groupName: "vip", multiplierLabel: "1.2x",
+					groupType:    "openai", groupName: "vip",
 				}
 				resourceID, _, err := service.createAdminResource(connectionCtx, 1, []string{"7"}, key)
 				if err != nil {
