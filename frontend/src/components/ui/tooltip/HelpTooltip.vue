@@ -9,12 +9,12 @@ defineProps<{
 
 <template>
   <Tooltip :text="text" wide>
-    <button
-      type="button"
+    <UiButton
+      attr-type="button"
       :aria-label="text"
       class="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
     >
       <CircleHelp class="h-3.5 w-3.5" />
-    </button>
+    </UiButton>
   </Tooltip>
 </template>

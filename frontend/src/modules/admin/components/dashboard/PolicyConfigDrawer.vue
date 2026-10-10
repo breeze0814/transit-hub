@@ -4,7 +4,13 @@ import { useI18n } from 'vue-i18n'
 import { ArrowDownUp, BookOpenText, Radar, X, ShieldCheck, Plus, Trash2 } from 'lucide-vue-next'
 import { HelpTooltip } from '@/components/ui/tooltip'
 import PolicyRunFlowDialog from './PolicyRunFlowDialog.vue'
-import type { ConnectionHealthPolicy, ConnectionHealthPriorityMode, ConnectionHealthStrategyMode, ModelTargetInput, PolicyInput } from '../../types/connectionHealth'
+import type {
+  ConnectionHealthPolicy,
+  ConnectionHealthPriorityMode,
+  ConnectionHealthStrategyMode,
+  ModelTargetInput,
+  PolicyInput,
+} from '../../types/connectionHealth'
 import { resolveConnectionHealthStrategyMode } from '../../utils/connectionHealthPolicy'
 
 export interface OwnGroupOption {
@@ -90,7 +96,7 @@ const resetForm = () => {
   // 没有任何有效 provider（新建策略）时才使用默认值 openai；混用多个 provider 时不静默
   // 选一个、也不丢数据——留空强制用户显式选择，同时打开 providerMismatch 警告，
   // 保存前的校验会因为 provider 为空而拦下。
-  const existingProviders = Array.from(new Set((p?.modelTargets ?? []).map(m => m.providerFamily).filter(Boolean)))
+  const existingProviders = Array.from(new Set((p?.modelTargets ?? []).map((m) => m.providerFamily).filter(Boolean)))
   if (existingProviders.length > 1) {
     providerMismatch.value = true
     policyProvider.value = ''
@@ -100,7 +106,7 @@ const resetForm = () => {
   }
 
   modelTargets.value = p?.modelTargets?.length
-    ? p.modelTargets.map(m => ({
+    ? p.modelTargets.map((m) => ({
         id: m.id,
         modelName: m.modelName,
         providerFamily: m.providerFamily,
@@ -108,17 +114,32 @@ const resetForm = () => {
         probePrompt: m.probePrompt,
         maxProbeTokens: m.maxProbeTokens,
       }))
-    : [{ modelName: '', providerFamily: policyProvider.value, enabled: true, probePrompt: '', maxProbeTokens: DEFAULTS.maxProbeTokens }]
+    : [
+        {
+          modelName: '',
+          providerFamily: policyProvider.value,
+          enabled: true,
+          probePrompt: '',
+          maxProbeTokens: DEFAULTS.maxProbeTokens,
+        },
+      ]
   validationError.value = null
 }
 
-watch(() => props.open, (isOpen) => { if (isOpen) resetForm() })
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen) resetForm()
+  },
+)
 
 // 切换策略级 provider 时同步更新表单内所有模型目标的 providerFamily，保持实时一致；
 // 混用警告状态下 policyProvider 初始为空，此时不覆盖已有目标，等用户真正选择后再统一。
 watch(policyProvider, (val) => {
   if (!val) return
-  modelTargets.value.forEach((m) => { m.providerFamily = val })
+  modelTargets.value.forEach((m) => {
+    m.providerFamily = val
+  })
 })
 
 watch(autoDegradeEnabled, (enabled) => {
@@ -126,7 +147,13 @@ watch(autoDegradeEnabled, (enabled) => {
 })
 
 const addModelTarget = () => {
-  modelTargets.value.push({ modelName: '', providerFamily: policyProvider.value, enabled: true, probePrompt: '', maxProbeTokens: DEFAULTS.maxProbeTokens })
+  modelTargets.value.push({
+    modelName: '',
+    providerFamily: policyProvider.value,
+    enabled: true,
+    probePrompt: '',
+    maxProbeTokens: DEFAULTS.maxProbeTokens,
+  })
 }
 
 const removeModelTarget = (index: number) => {
@@ -146,16 +173,16 @@ const handleSave = () => {
   const targets = isMultiplierOnly.value
     ? []
     : modelTargets.value
-        .filter(m => m.modelName.trim() !== '')
+        .filter((m) => m.modelName.trim() !== '')
         // 保存出去的目标 provider 必须和策略级 provider 一致：不管表单内部状态如何，
         // 落盘前统一按 policyProvider 重新盖章，从根上避免出现混用 provider 的脏数据。
-        .map(m => ({ ...m, providerFamily: policyProvider.value }))
+        .map((m) => ({ ...m, providerFamily: policyProvider.value }))
   if (!isMultiplierOnly.value && targets.length === 0) {
     validationError.value = t(`${prefix}.errors.modelTargetRequired`)
     return
   }
 
-  const ownGroup = props.ownGroupOptions.find(g => g.id === ownGroupId.value)
+  const ownGroup = props.ownGroupOptions.find((g) => g.id === ownGroupId.value)
   const input: PolicyInput = {
     id: props.policy?.id,
     name: name.value.trim(),
@@ -180,307 +207,382 @@ const handleSave = () => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
+  <UiDrawer
+    v-if="open"
+    :show="Boolean(open)"
+    :z-index="150"
+    @mask-click="emit('close')"
+    @esc="emit('close')"
+    width="32rem"
+  >
+    <div
+      v-if="open"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="isEditing ? t(`${prefix}.editTitle`) : t(`${prefix}.createTitle`)"
+      class="h-full w-full overflow-y-auto overscroll-contain border-l border-border/60 bg-card"
     >
-      <div v-if="open" class="fixed inset-0 z-[150]">
-        <div class="absolute inset-0 bg-background/60 backdrop-blur-sm" @click="emit('close')" />
-
-        <Transition
-          enter-active-class="transition duration-250 ease-out"
-          enter-from-class="translate-x-full"
-          enter-to-class="translate-x-0"
-          leave-active-class="transition duration-200 ease-in"
-          leave-from-class="translate-x-0"
-          leave-to-class="translate-x-full"
-        >
-          <div
-            v-if="open"
-            role="dialog"
-            aria-modal="true"
-            :aria-label="isEditing ? t(`${prefix}.editTitle`) : t(`${prefix}.createTitle`)"
-            class="absolute bottom-0 right-0 top-0 w-full max-w-lg overflow-y-auto overscroll-contain border-l border-border/60 bg-card shadow-2xl"
-          >
-            <div class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border/60 bg-card/95 backdrop-blur px-5 py-4">
-              <div class="flex items-center gap-2.5">
-                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <ShieldCheck class="h-4 w-4" />
-                </div>
-                <h3 class="text-sm font-semibold text-foreground">
-                  {{ isEditing ? t(`${prefix}.editTitle`) : t(`${prefix}.createTitle`) }}
-                </h3>
-              </div>
-              <div class="flex shrink-0 items-center gap-1">
-                <button
-                  v-if="!isMultiplierOnly"
-                  type="button"
-                  class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
-                  @click="runFlowOpen = true"
-                >
-                  <BookOpenText class="h-3.5 w-3.5" />
-                  {{ t(`${prefix}.runFlow.buttonLabel`) }}
-                </button>
-                <button
-                  type="button"
-                  class="rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
-                  @click="emit('close')"
-                >
-                  <X class="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            <div class="space-y-5 px-5 py-5">
-              <div v-if="validationError" class="rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-600 dark:text-red-400">
-                {{ validationError }}
-              </div>
-
-              <!-- 基础信息 -->
-              <div class="space-y-3">
-                <div class="space-y-1.5">
-                  <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.nameLabel`) }}</label>
-                  <input
-                    v-model="name"
-                    type="text"
-                    :placeholder="t(`${prefix}.namePlaceholder`)"
-                    class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground"
-                  />
-                </div>
-
-                <div class="flex items-center justify-between rounded-lg border border-border/40 bg-surface/30 px-4 py-3">
-                  <div class="text-sm text-foreground">{{ t(`${prefix}.enabledLabel`) }}</div>
-                  <label class="relative inline-flex cursor-pointer items-center">
-                    <input v-model="enabled" type="checkbox" class="peer sr-only" />
-                    <div class="w-9 h-5 bg-surface-elevated rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
-
-                <div class="space-y-2">
-                  <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.strategyModeLabel`) }}</label>
-                  <div class="grid grid-cols-2 gap-1 rounded-lg bg-surface p-1" role="radiogroup" :aria-label="t(`${prefix}.strategyModeLabel`)">
-                    <button
-                      v-for="mode in (['health_probe', 'multiplier_only'] as const)"
-                      :key="mode"
-                      type="button"
-                      role="radio"
-                      :aria-checked="strategyMode === mode"
-                      class="flex min-h-16 items-start gap-2 rounded-md px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                      :class="strategyMode === mode ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
-                      @click="strategyMode = mode"
-                    >
-                      <Radar v-if="mode === 'health_probe'" class="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                      <ArrowDownUp v-else class="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                      <span>
-                        <span class="block text-xs font-medium">{{ t(`${prefix}.strategyModes.${mode}.title`) }}</span>
-                        <span class="mt-1 block text-xs leading-4 text-muted-foreground">{{ t(`${prefix}.strategyModes.${mode}.description`) }}</span>
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
-                <div class="space-y-1.5">
-                  <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                    {{ t(`${prefix}.ownGroupLabel`) }}
-                    <HelpTooltip :text="t(`${prefix}.tooltips.ownGroup`)" />
-                  </label>
-                  <select v-model="ownGroupId" class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground">
-                    <option value="">{{ t(`${prefix}.ownGroupAllOption`) }}</option>
-                    <option v-for="g in ownGroupOptions" :key="g.id" :value="g.id">{{ g.name }}</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- 模型探活目标 -->
-              <div v-if="!isMultiplierOnly" class="space-y-2 border-t border-border/40 pt-4">
-                <div class="flex items-center justify-between">
-                  <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                    {{ t(`${prefix}.modelTargetsLabel`) }}
-                    <HelpTooltip :text="t(`${prefix}.tooltips.modelTargets`)" />
-                  </label>
-                  <button type="button" class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline" @click="addModelTarget">
-                    <Plus class="h-3 w-3" />{{ t(`${prefix}.addModelTarget`) }}
-                  </button>
-                </div>
-
-                <!-- 策略级 provider：一个策略只能选一个 provider，下方所有模型目标都跟随这个选择。 -->
-                <div class="space-y-1.5">
-                  <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                    {{ t(`${prefix}.providerLabel`) }}
-                    <HelpTooltip :text="t(`${prefix}.tooltips.provider`)" />
-                  </label>
-                  <select v-model="policyProvider" class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground">
-                    <option v-if="!policyProvider" value="" disabled>{{ t(`${prefix}.providerPlaceholder`) }}</option>
-                    <option v-for="p in providerOptions" :key="p" :value="p">{{ t(`admin.connectionHealth.providerLabels.${p}`) }}</option>
-                  </select>
-                  <p v-if="providerMismatch" class="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 text-xs text-amber-700 dark:text-amber-400">
-                    {{ t(`${prefix}.providerMismatchWarning`) }}
-                  </p>
-                </div>
-
-                <div v-for="(target, index) in modelTargets" :key="index" class="rounded-lg border border-border/40 p-3 space-y-2">
-                  <div class="flex items-center gap-2">
-                    <input
-                      v-model="target.modelName"
-                      type="text"
-                      :placeholder="t(`${prefix}.modelNamePlaceholder`)"
-                      class="h-8 flex-1 rounded-md border border-border/60 bg-background px-2 text-xs text-foreground"
-                    />
-                    <button type="button" class="rounded-md p-1.5 text-muted-foreground hover:bg-surface-line hover:text-red-500" @click="removeModelTarget(index)">
-                      <Trash2 class="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <label class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <input v-model="target.enabled" type="checkbox" class="h-3.5 w-3.5 rounded border-border/60" />
-                      {{ t(`${prefix}.modelEnabledLabel`) }}
-                    </label>
-                    <label class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                      {{ t(`${prefix}.maxProbeTokensLabel`) }}
-                      <input v-model.number="target.maxProbeTokens" type="number" min="1" class="h-7 w-16 rounded-md border border-border/60 bg-background px-1.5 text-xs text-foreground" />
-                    </label>
-                  </div>
-                  <input
-                    v-model="target.probePrompt"
-                    type="text"
-                    :placeholder="t(`${prefix}.probePromptPlaceholder`)"
-                    class="h-8 w-full rounded-md border border-border/60 bg-background px-2 text-xs text-foreground"
-                  />
-                </div>
-              </div>
-
-              <!-- 阈值配置 -->
-              <div v-if="!isMultiplierOnly" class="grid grid-cols-2 gap-3 border-t border-border/40 pt-4">
-                <div class="space-y-1.5">
-                  <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                    {{ t(`${prefix}.probeIntervalLabel`) }}
-                    <HelpTooltip :text="t(`${prefix}.tooltips.probeInterval`)" />
-                  </label>
-                  <input v-model.number="probeIntervalSeconds" type="number" min="1" class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground" />
-                </div>
-                <div class="space-y-1.5">
-                  <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                    {{ t(`${prefix}.dailyBudgetLabel`) }}
-                    <HelpTooltip :text="t(`${prefix}.tooltips.dailyBudget`)" />
-                  </label>
-                  <input v-model.number="dailyProbeBudget" type="number" min="1" class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground" />
-                </div>
-                <div class="space-y-1.5">
-                  <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                    {{ t(`${prefix}.failureThresholdLabel`) }}
-                    <HelpTooltip :text="t(`${prefix}.tooltips.failureThreshold`)" />
-                  </label>
-                  <input v-model.number="failureThreshold" type="number" min="1" class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground" />
-                </div>
-                <div class="space-y-1.5">
-                  <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                    {{ t(`${prefix}.successThresholdLabel`) }}
-                    <HelpTooltip :text="t(`${prefix}.tooltips.successThreshold`)" />
-                  </label>
-                  <input v-model.number="successThreshold" type="number" min="1" class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground" />
-                </div>
-                <div class="space-y-1.5">
-                  <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                    {{ t(`${prefix}.cooldownLabel`) }}
-                    <HelpTooltip :text="t(`${prefix}.tooltips.cooldown`)" />
-                  </label>
-                  <input v-model.number="cooldownSeconds" type="number" min="1" class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground" />
-                </div>
-                <div class="space-y-1.5">
-                  <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                    {{ t(`${prefix}.observationLabel`) }}
-                    <HelpTooltip :text="t(`${prefix}.tooltips.observation`)" />
-                  </label>
-                  <input v-model.number="observationSeconds" type="number" min="1" class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground" />
-                </div>
-                <div class="col-span-2 space-y-1.5">
-                  <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                    {{ t(`${prefix}.recoveryStepLabel`) }}
-                    <HelpTooltip :text="t(`${prefix}.tooltips.recoveryStep`)" />
-                  </label>
-                  <input v-model.number="recoveryStepPercent" type="number" min="1" max="100" class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground" />
-                </div>
-              </div>
-
-              <!-- 自动化开关：默认保守，远端动作必须让用户明确可见并主动打开 -->
-              <div v-if="!isMultiplierOnly" class="space-y-3 border-t border-border/40 pt-4">
-                <div class="space-y-2 rounded-lg border border-border/40 bg-surface/30 px-4 py-3">
-                  <div class="flex items-center gap-1 text-sm text-foreground">
-                    <ArrowDownUp class="h-4 w-4 text-primary" />
-                    {{ t(`${prefix}.priorityModeLabel`) }}
-                    <HelpTooltip :text="t(`${prefix}.tooltips.priorityMode`)" />
-                  </div>
-                  <div class="grid grid-cols-2 gap-1 rounded-lg bg-surface p-1" role="radiogroup" :aria-label="t(`${prefix}.priorityModeLabel`)">
-                    <button
-                      v-for="mode in (['none', 'multiplier'] as const)"
-                      :key="mode"
-                      type="button"
-                      role="radio"
-                      :aria-checked="priorityMode === mode"
-                      class="rounded-md px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                      :class="priorityMode === mode ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
-                      @click="priorityMode = mode"
-                    >
-                      {{ t(`${prefix}.priorityModes.${mode}`) }}
-                    </button>
-                  </div>
-                  <p class="text-xs leading-5 text-muted-foreground">{{ t(`${prefix}.priorityModeHelp`) }}</p>
-                </div>
-                <div class="flex items-center justify-between rounded-lg border border-border/40 bg-surface/30 px-4 py-3">
-                  <div>
-                    <div class="flex items-center gap-1 text-sm text-foreground">
-                      {{ t(`${prefix}.autoDegradeLabel`) }}
-                      <HelpTooltip :text="t(`${prefix}.tooltips.autoDegrade`)" />
-                    </div>
-                    <div class="text-xs text-muted-foreground">{{ t(`${prefix}.autoDegradeHelp`) }}</div>
-                  </div>
-                  <label class="relative inline-flex cursor-pointer items-center shrink-0">
-                    <input v-model="autoDegradeEnabled" type="checkbox" class="peer sr-only" />
-                    <div class="w-9 h-5 bg-surface-elevated rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
-                <div class="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3">
-                  <div>
-                    <div class="flex items-center gap-1 text-sm text-foreground">
-                      {{ t(`${prefix}.autoRemoteActionLabel`) }}
-                      <HelpTooltip :text="t(`${prefix}.tooltips.autoRemoteAction`)" />
-                    </div>
-                    <div class="text-xs text-amber-700 dark:text-amber-400">{{ t(`${prefix}.autoRemoteActionHelp`) }}</div>
-                  </div>
-                  <label class="relative inline-flex cursor-pointer items-center shrink-0">
-                    <input v-model="autoRemoteActionEnabled" type="checkbox" class="peer sr-only" :disabled="!autoDegradeEnabled" />
-                    <div class="w-9 h-5 bg-surface-elevated rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white peer-disabled:cursor-not-allowed peer-disabled:opacity-50 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
-              </div>
-
-              <div v-else class="rounded-lg border border-primary/25 bg-primary/[0.05] px-4 py-3">
-                <div class="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <ArrowDownUp class="h-4 w-4 text-primary" />
-                  {{ t(`${prefix}.multiplierOnlySummaryTitle`) }}
-                </div>
-                <p class="mt-1 text-xs leading-5 text-muted-foreground">{{ t(`${prefix}.multiplierOnlySummary`) }}</p>
-              </div>
-
-              <div class="flex items-center justify-end gap-2 border-t border-border/40 pt-4">
-                <button type="button" class="rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-surface-line" @click="emit('close')">
-                  {{ t(`${prefix}.cancel`) }}
-                </button>
-                <button type="button" class="rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90" @click="handleSave">
-                  {{ t(`${prefix}.save`) }}
-                </button>
-              </div>
-            </div>
+      <div
+        class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border/60 bg-card/95 backdrop-blur px-5 py-4"
+      >
+        <div class="flex items-center gap-2.5">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <ShieldCheck class="h-4 w-4" />
           </div>
-        </Transition>
+          <h3 class="text-sm font-semibold text-foreground">
+            {{ isEditing ? t(`${prefix}.editTitle`) : t(`${prefix}.createTitle`) }}
+          </h3>
+        </div>
+        <div class="flex shrink-0 items-center gap-1">
+          <UiButton
+            v-if="!isMultiplierOnly"
+            attr-type="button"
+            class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
+            @click="runFlowOpen = true"
+          >
+            <BookOpenText class="h-3.5 w-3.5" />
+            {{ t(`${prefix}.runFlow.buttonLabel`) }}
+          </UiButton>
+          <UiButton
+            attr-type="button"
+            class="rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
+            @click="emit('close')"
+          >
+            <X class="h-4 w-4" />
+          </UiButton>
+        </div>
       </div>
-    </Transition>
-  </Teleport>
+
+      <div class="space-y-5 px-5 py-5">
+        <div
+          v-if="validationError"
+          class="rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-600 dark:text-red-400"
+        >
+          {{ validationError }}
+        </div>
+
+        <!-- 基础信息 -->
+        <div class="space-y-3">
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.nameLabel`) }}</label>
+            <UiInput
+              v-model="name"
+              type="text"
+              :placeholder="t(`${prefix}.namePlaceholder`)"
+              class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground"
+            />
+          </div>
+
+          <div class="flex items-center justify-between rounded-lg border border-border/40 bg-surface/30 px-4 py-3">
+            <div class="text-sm text-foreground">
+              {{ t(`${prefix}.enabledLabel`) }}
+            </div>
+            <label class="relative inline-flex cursor-pointer items-center">
+              <UiChoice switch v-model="enabled" type="checkbox" class="peer sr-only" />
+            </label>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.strategyModeLabel`) }}</label>
+            <NRadioGroup
+              :value="strategyMode"
+              @update:value="strategyMode = $event"
+              :aria-label="t(`${prefix}.strategyModeLabel`)"
+              size="small"
+              class="ui-radio-cards"
+            >
+              <NRadio v-for="mode in ['health_probe', 'multiplier_only'] as const" :key="mode" :value="mode">
+                <span class="flex min-w-0 items-start gap-2"
+                  ><Radar v-if="mode === 'health_probe'" class="mt-0.5 h-4 w-4 shrink-0 text-primary" /><ArrowDownUp
+                    v-else
+                    class="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                  /><span>
+                    <span class="block text-xs font-medium">{{ t(`${prefix}.strategyModes.${mode}.title`) }}</span>
+                    <span class="mt-1 block text-xs leading-4 text-muted-foreground">{{
+                      t(`${prefix}.strategyModes.${mode}.description`)
+                    }}</span>
+                  </span></span
+                >
+              </NRadio>
+            </NRadioGroup>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+              {{ t(`${prefix}.ownGroupLabel`) }}
+              <HelpTooltip :text="t(`${prefix}.tooltips.ownGroup`)" />
+            </label>
+            <UiSelect
+              v-model="ownGroupId"
+              class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground"
+            >
+              <UiOption value="">{{ t(`${prefix}.ownGroupAllOption`) }}</UiOption>
+              <UiOption v-for="g in ownGroupOptions" :key="g.id" :value="g.id">{{ g.name }}</UiOption>
+            </UiSelect>
+          </div>
+        </div>
+
+        <!-- 模型探活目标 -->
+        <div v-if="!isMultiplierOnly" class="space-y-2 border-t border-border/40 pt-4">
+          <div class="flex items-center justify-between">
+            <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+              {{ t(`${prefix}.modelTargetsLabel`) }}
+              <HelpTooltip :text="t(`${prefix}.tooltips.modelTargets`)" />
+            </label>
+            <UiButton
+              attr-type="button"
+              class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+              @click="addModelTarget"
+            >
+              <Plus class="h-3 w-3" />{{ t(`${prefix}.addModelTarget`) }}
+            </UiButton>
+          </div>
+
+          <!-- 策略级 provider：一个策略只能选一个 provider，下方所有模型目标都跟随这个选择。 -->
+          <div class="space-y-1.5">
+            <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+              {{ t(`${prefix}.providerLabel`) }}
+              <HelpTooltip :text="t(`${prefix}.tooltips.provider`)" />
+            </label>
+            <UiSelect
+              v-model="policyProvider"
+              class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground"
+            >
+              <UiOption v-if="!policyProvider" value="" disabled>{{ t(`${prefix}.providerPlaceholder`) }}</UiOption>
+              <UiOption v-for="p in providerOptions" :key="p" :value="p">{{
+                t(`admin.connectionHealth.providerLabels.${p}`)
+              }}</UiOption>
+            </UiSelect>
+            <p
+              v-if="providerMismatch"
+              class="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 text-xs text-amber-700 dark:text-amber-400"
+            >
+              {{ t(`${prefix}.providerMismatchWarning`) }}
+            </p>
+          </div>
+
+          <div
+            v-for="(target, index) in modelTargets"
+            :key="index"
+            class="rounded-lg border border-border/40 p-3 space-y-2"
+          >
+            <div class="flex items-center gap-2">
+              <UiInput
+                v-model="target.modelName"
+                type="text"
+                :placeholder="t(`${prefix}.modelNamePlaceholder`)"
+                class="h-8 flex-1 rounded-md border border-border/60 bg-background px-2 text-xs text-foreground"
+              />
+              <UiButton
+                attr-type="button"
+                class="rounded-md p-1.5 text-muted-foreground hover:bg-surface-line hover:text-red-500"
+                @click="removeModelTarget(index)"
+              >
+                <Trash2 class="h-3.5 w-3.5" />
+              </UiButton>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                <UiChoice v-model="target.enabled" type="checkbox" class="h-3.5 w-3.5 rounded border-border/60">
+                  {{ t(`${prefix}.modelEnabledLabel`) }}
+                </UiChoice>
+              </div>
+              <label class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                {{ t(`${prefix}.maxProbeTokensLabel`) }}
+                <UiNumberInput
+                  v-model.number="target.maxProbeTokens"
+                  type="number"
+                  min="1"
+                  class="h-7 w-16 rounded-md border border-border/60 bg-background px-1.5 text-xs text-foreground"
+                />
+              </label>
+            </div>
+            <UiInput
+              v-model="target.probePrompt"
+              type="text"
+              :placeholder="t(`${prefix}.probePromptPlaceholder`)"
+              class="h-8 w-full rounded-md border border-border/60 bg-background px-2 text-xs text-foreground"
+            />
+          </div>
+        </div>
+
+        <!-- 阈值配置 -->
+        <div v-if="!isMultiplierOnly" class="grid grid-cols-2 gap-3 border-t border-border/40 pt-4">
+          <div class="space-y-1.5">
+            <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+              {{ t(`${prefix}.probeIntervalLabel`) }}
+              <HelpTooltip :text="t(`${prefix}.tooltips.probeInterval`)" />
+            </label>
+            <UiNumberInput
+              v-model.number="probeIntervalSeconds"
+              type="number"
+              min="1"
+              class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground"
+            />
+          </div>
+          <div class="space-y-1.5">
+            <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+              {{ t(`${prefix}.dailyBudgetLabel`) }}
+              <HelpTooltip :text="t(`${prefix}.tooltips.dailyBudget`)" />
+            </label>
+            <UiNumberInput
+              v-model.number="dailyProbeBudget"
+              type="number"
+              min="1"
+              class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground"
+            />
+          </div>
+          <div class="space-y-1.5">
+            <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+              {{ t(`${prefix}.failureThresholdLabel`) }}
+              <HelpTooltip :text="t(`${prefix}.tooltips.failureThreshold`)" />
+            </label>
+            <UiNumberInput
+              v-model.number="failureThreshold"
+              type="number"
+              min="1"
+              class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground"
+            />
+          </div>
+          <div class="space-y-1.5">
+            <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+              {{ t(`${prefix}.successThresholdLabel`) }}
+              <HelpTooltip :text="t(`${prefix}.tooltips.successThreshold`)" />
+            </label>
+            <UiNumberInput
+              v-model.number="successThreshold"
+              type="number"
+              min="1"
+              class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground"
+            />
+          </div>
+          <div class="space-y-1.5">
+            <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+              {{ t(`${prefix}.cooldownLabel`) }}
+              <HelpTooltip :text="t(`${prefix}.tooltips.cooldown`)" />
+            </label>
+            <UiNumberInput
+              v-model.number="cooldownSeconds"
+              type="number"
+              min="1"
+              class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground"
+            />
+          </div>
+          <div class="space-y-1.5">
+            <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+              {{ t(`${prefix}.observationLabel`) }}
+              <HelpTooltip :text="t(`${prefix}.tooltips.observation`)" />
+            </label>
+            <UiNumberInput
+              v-model.number="observationSeconds"
+              type="number"
+              min="1"
+              class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground"
+            />
+          </div>
+          <div class="col-span-2 space-y-1.5">
+            <label class="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+              {{ t(`${prefix}.recoveryStepLabel`) }}
+              <HelpTooltip :text="t(`${prefix}.tooltips.recoveryStep`)" />
+            </label>
+            <UiNumberInput
+              v-model.number="recoveryStepPercent"
+              type="number"
+              min="1"
+              max="100"
+              class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground"
+            />
+          </div>
+        </div>
+
+        <!-- 自动化开关：默认保守，远端动作必须让用户明确可见并主动打开 -->
+        <div v-if="!isMultiplierOnly" class="space-y-3 border-t border-border/40 pt-4">
+          <div class="space-y-2 rounded-lg border border-border/40 bg-surface/30 px-4 py-3">
+            <div class="flex items-center gap-1 text-sm text-foreground">
+              <ArrowDownUp class="h-4 w-4 text-primary" />
+              {{ t(`${prefix}.priorityModeLabel`) }}
+              <HelpTooltip :text="t(`${prefix}.tooltips.priorityMode`)" />
+            </div>
+            <NRadioGroup
+              :value="priorityMode"
+              @update:value="priorityMode = $event"
+              :aria-label="t(`${prefix}.priorityModeLabel`)"
+              size="small"
+              class="ui-radio-segmented"
+            >
+              <NRadioButton v-for="mode in ['none', 'multiplier'] as const" :key="mode" :value="mode">
+                {{ t(`${prefix}.priorityModes.${mode}`) }}
+              </NRadioButton>
+            </NRadioGroup>
+            <p class="text-xs leading-5 text-muted-foreground">
+              {{ t(`${prefix}.priorityModeHelp`) }}
+            </p>
+          </div>
+          <div class="flex items-center justify-between rounded-lg border border-border/40 bg-surface/30 px-4 py-3">
+            <div>
+              <div class="flex items-center gap-1 text-sm text-foreground">
+                {{ t(`${prefix}.autoDegradeLabel`) }}
+                <HelpTooltip :text="t(`${prefix}.tooltips.autoDegrade`)" />
+              </div>
+              <div class="text-xs text-muted-foreground">
+                {{ t(`${prefix}.autoDegradeHelp`) }}
+              </div>
+            </div>
+            <label class="relative inline-flex cursor-pointer items-center shrink-0">
+              <UiChoice switch v-model="autoDegradeEnabled" type="checkbox" class="peer sr-only" />
+            </label>
+          </div>
+          <div class="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+            <div>
+              <div class="flex items-center gap-1 text-sm text-foreground">
+                {{ t(`${prefix}.autoRemoteActionLabel`) }}
+                <HelpTooltip :text="t(`${prefix}.tooltips.autoRemoteAction`)" />
+              </div>
+              <div class="text-xs text-amber-700 dark:text-amber-400">
+                {{ t(`${prefix}.autoRemoteActionHelp`) }}
+              </div>
+            </div>
+            <label class="relative inline-flex cursor-pointer items-center shrink-0">
+              <UiChoice
+                switch
+                v-model="autoRemoteActionEnabled"
+                type="checkbox"
+                class="peer sr-only"
+                :disabled="!autoDegradeEnabled"
+              />
+            </label>
+          </div>
+        </div>
+
+        <div v-else class="rounded-lg border border-primary/25 bg-primary/[0.05] px-4 py-3">
+          <div class="flex items-center gap-2 text-sm font-medium text-foreground">
+            <ArrowDownUp class="h-4 w-4 text-primary" />
+            {{ t(`${prefix}.multiplierOnlySummaryTitle`) }}
+          </div>
+          <p class="mt-1 text-xs leading-5 text-muted-foreground">
+            {{ t(`${prefix}.multiplierOnlySummary`) }}
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 border-t border-border/40 pt-4">
+          <UiButton
+            attr-type="button"
+            class="rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-surface-line"
+            @click="emit('close')"
+          >
+            {{ t(`${prefix}.cancel`) }}
+          </UiButton>
+          <UiButton
+            attr-type="button"
+            class="rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            @click="handleSave"
+          >
+            {{ t(`${prefix}.save`) }}
+          </UiButton>
+        </div>
+      </div>
+    </div>
+  </UiDrawer>
 
   <PolicyRunFlowDialog :open="runFlowOpen" @close="runFlowOpen = false" />
 </template>

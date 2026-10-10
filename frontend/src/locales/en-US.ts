@@ -1,4 +1,5 @@
 export default {
+  common: { confirmation: 'Confirm action', confirm: 'Confirm', cancel: 'Cancel' },
   brand: {
     name: 'TransitHub',
     logoAlt: 'TransitHub logo'

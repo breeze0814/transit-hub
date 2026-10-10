@@ -1,7 +1,23 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { AlertCircle, Ban, CheckCircle2, ChevronDown, ChevronUp, Eye, FileText, History, Loader2, Mail, RefreshCw, Search, Send, Trash2, X } from 'lucide-vue-next'
+import {
+  AlertCircle,
+  Ban,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  FileText,
+  History,
+  Loader2,
+  Mail,
+  RefreshCw,
+  Search,
+  Send,
+  Trash2,
+  X,
+} from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { getEmailTemplates } from '../api/settings'
 import {
@@ -37,7 +53,6 @@ const searchFilter = ref('')
 const sortBy = ref<MassEmailUserSortBy>('created_at')
 const sortOrder = ref<MassEmailSortOrder>('desc')
 const selectedIds = ref<Set<string>>(new Set())
-const selectAllRef = ref<HTMLInputElement | null>(null)
 
 const templates = ref<EmailTemplate[]>([])
 const selectedTemplateId = ref('')
@@ -47,6 +62,10 @@ const batchItems = ref<MassEmailBatchItem[]>([])
 const batchItemPage = ref(1)
 const batchItemTotalPages = ref(1)
 const batchItemTotal = ref(0)
+const changeBatchItemPage = (page: number) => {
+  batchItemPage.value = page
+  void loadBatchItems()
+}
 
 const isLoadingUsers = ref(false)
 const isLoadingTemplates = ref(false)
@@ -75,21 +94,32 @@ const statusOptions = ['active', 'disabled', 'inactive', 'banned'] as const
 const roleOptions = ['user', 'admin'] as const
 const activeBatchStatuses = ['queued', 'running', 'cancelling']
 
-const selectedTemplate = computed(() => templates.value.find((template) => template.id === selectedTemplateId.value) ?? null)
+const selectedTemplate = computed(
+  () => templates.value.find((template) => template.id === selectedTemplateId.value) ?? null,
+)
 const currentPageIds = computed(() => users.value.map((user) => user.id))
 const currentPageSelectedCount = computed(() => currentPageIds.value.filter((id) => selectedIds.value.has(id)).length)
-const isCurrentPageChecked = computed(() => currentPageIds.value.length > 0 && currentPageSelectedCount.value === currentPageIds.value.length)
-const isCurrentPageIndeterminate = computed(() => currentPageSelectedCount.value > 0 && currentPageSelectedCount.value < currentPageIds.value.length)
+const isCurrentPageChecked = computed(
+  () => currentPageIds.value.length > 0 && currentPageSelectedCount.value === currentPageIds.value.length,
+)
+const isCurrentPageIndeterminate = computed(
+  () => currentPageSelectedCount.value > 0 && currentPageSelectedCount.value < currentPageIds.value.length,
+)
 const selectedCount = computed(() => selectedIds.value.size)
 const activeBatches = computed(() => batches.value.filter((batch) => activeBatchStatuses.includes(batch.status)))
-const hasActiveBatchState = computed(() => (
-  activeBatches.value.length > 0 || Boolean(selectedBatch.value && activeBatchStatuses.includes(selectedBatch.value.status))
-))
-const confirmRecipientCount = computed(() => (confirmMode.value === 'all' ? totalUsers.value : confirmUserIds.value.length))
+const hasActiveBatchState = computed(
+  () =>
+    activeBatches.value.length > 0 ||
+    Boolean(selectedBatch.value && activeBatchStatuses.includes(selectedBatch.value.status)),
+)
+const confirmRecipientCount = computed(() =>
+  confirmMode.value === 'all' ? totalUsers.value : confirmUserIds.value.length,
+)
 const timezone = computed(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')
 const previewDocument = computed(() => {
   const htmlBody = selectedTemplate.value?.htmlBody ?? ''
-  const policy = "default-src 'none'; style-src 'unsafe-inline'; img-src data: cid:; font-src data:; form-action 'none'; frame-src 'none'; connect-src 'none'"
+  const policy =
+    "default-src 'none'; style-src 'unsafe-inline'; img-src data: cid:; font-src data:; form-action 'none'; frame-src 'none'; connect-src 'none'"
   const meta = `<meta http-equiv="Content-Security-Policy" content="${policy}"><meta name="referrer" content="no-referrer">`
   if (/<head(?:\s[^>]*)?>/i.test(htmlBody)) {
     return htmlBody.replace(/<head(?:\s[^>]*)?>/i, (head) => `${head}${meta}`)
@@ -110,9 +140,8 @@ const formatDateTime = (value?: string | null): string => {
   }).format(date)
 }
 
-const terminalBatchCount = (batch: MassEmailBatch): number => (
+const terminalBatchCount = (batch: MassEmailBatch): number =>
   batch.sentCount + batch.failedCount + batch.uncertainCount + batch.cancelledCount
-)
 
 const batchProgress = (batch: MassEmailBatch): number => {
   if (!batch.recipientCount) return 0
@@ -317,7 +346,8 @@ const openSendConfirm = async (mode: MassEmailSelectionMode, userIds: string[]) 
   confirmMode.value = mode
   confirmUserIds.value = userIds
   confirmTitleKey.value = mode === 'all' ? 'admin.massEmail.confirm.allTitle' : 'admin.massEmail.confirm.selectedTitle'
-  confirmDescriptionKey.value = mode === 'all' ? 'admin.massEmail.confirm.allDescription' : 'admin.massEmail.confirm.selectedDescription'
+  confirmDescriptionKey.value =
+    mode === 'all' ? 'admin.massEmail.confirm.allDescription' : 'admin.massEmail.confirm.selectedDescription'
   confirmRequestId.value = crypto.randomUUID()
   selectedTemplateId.value = ''
   confirmOpen.value = true
@@ -440,7 +470,11 @@ const pollActiveBatches = async () => {
   try {
     await loadBatches()
     const selectedIsActive = Boolean(selectedBatch.value && activeBatchStatuses.includes(selectedBatch.value.status))
-    if (selectedBatch.value && isBatchDetailOpen.value && (selectedIsActive || (selectedWasActive && !selectedIsActive))) {
+    if (
+      selectedBatch.value &&
+      isBatchDetailOpen.value &&
+      (selectedIsActive || (selectedWasActive && !selectedIsActive))
+    ) {
       await loadBatchItems()
     }
   } finally {
@@ -471,11 +505,6 @@ const handleKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Escape') closeTopModal()
 }
 
-watch([isCurrentPageChecked, isCurrentPageIndeterminate], async () => {
-  await nextTick()
-  if (selectAllRef.value) selectAllRef.value.indeterminate = isCurrentPageIndeterminate.value
-})
-
 onMounted(() => {
   void refreshAll()
   document.addEventListener('keydown', handleKeydown)
@@ -491,34 +520,43 @@ onBeforeUnmount(() => {
   <div class="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
     <section class="shrink-0 rounded-lg border border-border/50 bg-card p-3 shadow-sm">
       <div class="flex flex-col gap-3 2xl:flex-row 2xl:items-end 2xl:justify-between">
-        <div class="grid flex-1 gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(14rem,1.5fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_auto]">
+        <div
+          class="grid flex-1 gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(14rem,1.5fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_auto]"
+        >
           <form class="space-y-1 sm:col-span-2 lg:col-span-1" @submit.prevent="applySearch">
             <label for="mass-email-user-search" class="block text-sm font-medium text-foreground">
               {{ t('admin.massEmail.filters.search') }}
             </label>
             <div class="flex gap-2">
               <div class="relative min-w-0 flex-1">
-                <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
+                <UiInput
                   id="mass-email-user-search"
                   v-model="searchDraft"
                   type="search"
-                  class="h-10 w-full rounded-lg border border-border/60 bg-surface py-2 pl-9 pr-9 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary"
+                  class="h-10 w-full rounded-lg border border-border/60 bg-surface py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary"
                   :placeholder="t('admin.massEmail.filters.searchPlaceholder')"
                   :aria-label="t('admin.massEmail.filters.search')"
                 >
-                <button
-                  v-if="searchDraft || searchFilter"
-                  type="button"
-                  class="absolute right-1 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  :aria-label="t('admin.massEmail.actions.clearSearch')"
-                  :title="t('admin.massEmail.actions.clearSearch')"
-                  @click="clearSearch"
-                >
-                  <X class="h-4 w-4" />
-                </button>
+                  <template #prefix><Search class="pointer-events-none h-4 w-4 text-muted-foreground" /></template>
+                  <template #suffix
+                    ><UiButton
+                      v-if="searchDraft || searchFilter"
+                      attr-type="button"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      :aria-label="t('admin.massEmail.actions.clearSearch')"
+                      :title="t('admin.massEmail.actions.clearSearch')"
+                      @click="clearSearch"
+                    >
+                      <X class="h-4 w-4" /> </UiButton
+                  ></template>
+                </UiInput>
               </div>
-              <Button type="submit" variant="secondary" class="h-10 shrink-0 rounded-lg px-3" :disabled="isLoadingUsers">
+              <Button
+                type="submit"
+                variant="secondary"
+                class="h-10 shrink-0 rounded-lg px-3"
+                :disabled="isLoadingUsers"
+              >
                 <Loader2 v-if="isLoadingUsers" class="h-4 w-4 animate-spin" />
                 <Search v-else class="h-4 w-4" />
                 <span>{{ t('admin.massEmail.actions.search') }}</span>
@@ -527,24 +565,37 @@ onBeforeUnmount(() => {
           </form>
           <label class="space-y-1 text-sm font-medium text-foreground">
             <span>{{ t('admin.massEmail.filters.status') }}</span>
-            <select v-model="statusFilter" class="h-10 w-full rounded-lg border border-border/60 bg-surface px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary" @change="setFilters">
-              <option value="">{{ t('admin.massEmail.filters.allStatuses') }}</option>
-              <option v-for="status in statusOptions" :key="status" :value="status">
+            <UiSelect
+              v-model="statusFilter"
+              class="h-10 w-full rounded-lg border border-border/60 bg-surface px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              @change="setFilters"
+            >
+              <UiOption value="">{{ t('admin.massEmail.filters.allStatuses') }}</UiOption>
+              <UiOption v-for="status in statusOptions" :key="status" :value="status">
                 {{ t(`admin.massEmail.userStatus.${status}`) }}
-              </option>
-            </select>
+              </UiOption>
+            </UiSelect>
           </label>
           <label class="space-y-1 text-sm font-medium text-foreground">
             <span>{{ t('admin.massEmail.filters.role') }}</span>
-            <select v-model="roleFilter" class="h-10 w-full rounded-lg border border-border/60 bg-surface px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary" @change="setFilters">
-              <option value="">{{ t('admin.massEmail.filters.allRoles') }}</option>
-              <option v-for="role in roleOptions" :key="role" :value="role">
+            <UiSelect
+              v-model="roleFilter"
+              class="h-10 w-full rounded-lg border border-border/60 bg-surface px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              @change="setFilters"
+            >
+              <UiOption value="">{{ t('admin.massEmail.filters.allRoles') }}</UiOption>
+              <UiOption v-for="role in roleOptions" :key="role" :value="role">
                 {{ t(`admin.massEmail.roles.${role}`) }}
-              </option>
-            </select>
+              </UiOption>
+            </UiSelect>
           </label>
           <div class="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-1">
-            <Button variant="secondary" class="h-10 rounded-lg px-3" :disabled="isLoadingUsers || isLoadingBatches" @click="refreshAll">
+            <Button
+              variant="secondary"
+              class="h-10 rounded-lg px-3"
+              :disabled="isLoadingUsers || isLoadingBatches"
+              @click="refreshAll"
+            >
               <Loader2 v-if="isLoadingUsers || isLoadingBatches" class="h-4 w-4 animate-spin" />
               <RefreshCw v-else class="h-4 w-4" />
               <span>{{ t('admin.massEmail.actions.refresh') }}</span>
@@ -555,16 +606,32 @@ onBeforeUnmount(() => {
             </Button>
           </div>
         </div>
-        <div class="grid gap-2 sm:grid-cols-[minmax(9rem,1.3fr)_minmax(9rem,1.3fr)_minmax(8rem,1fr)_auto] 2xl:w-[42rem]">
-          <Button class="h-10 rounded-lg" :disabled="selectedCount === 0 || isSubmitting" @click="openSendConfirm('selected', Array.from(selectedIds))">
+        <div
+          class="grid gap-2 sm:grid-cols-[minmax(9rem,1.3fr)_minmax(9rem,1.3fr)_minmax(8rem,1fr)_auto] 2xl:w-[42rem]"
+        >
+          <Button
+            class="h-10 rounded-lg"
+            :disabled="selectedCount === 0 || isSubmitting"
+            @click="openSendConfirm('selected', Array.from(selectedIds))"
+          >
             <Send class="h-4 w-4" />
             <span>{{ t('admin.massEmail.actions.sendSelected') }}</span>
           </Button>
-          <Button variant="secondary" class="h-10 rounded-lg" :disabled="users.length === 0 || isSubmitting" @click="openSendConfirm('selected', currentPageIds)">
+          <Button
+            variant="secondary"
+            class="h-10 rounded-lg"
+            :disabled="users.length === 0 || isSubmitting"
+            @click="openSendConfirm('selected', currentPageIds)"
+          >
             <Mail class="h-4 w-4" />
             <span>{{ t('admin.massEmail.actions.sendPage') }}</span>
           </Button>
-          <Button variant="secondary" class="h-10 rounded-lg" :disabled="totalUsers === 0 || isSubmitting" @click="openSendConfirm('all', [])">
+          <Button
+            variant="secondary"
+            class="h-10 rounded-lg"
+            :disabled="totalUsers === 0 || isSubmitting"
+            @click="openSendConfirm('all', [])"
+          >
             <CheckCircle2 class="h-4 w-4" />
             <span>{{ t('admin.massEmail.actions.sendFilter') }}</span>
           </Button>
@@ -577,127 +644,238 @@ onBeforeUnmount(() => {
       <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-live="polite">
         <span>{{ t('admin.massEmail.selection.count', { count: selectedCount }) }}</span>
         <span>{{ t('admin.massEmail.pagination.total', { total: totalUsers }) }}</span>
-        <span>{{ t('admin.massEmail.pagination.currentPage', { page: userPage, totalPages: totalUserPages }) }}</span>
+        <span>{{
+          t('admin.massEmail.pagination.currentPage', {
+            page: userPage,
+            totalPages: totalUserPages,
+          })
+        }}</span>
         <span>{{ t('admin.massEmail.batches.active', { count: activeBatches.length }) }}</span>
       </div>
     </section>
 
-    <div v-if="errorKey" class="shrink-0 flex items-start gap-3 rounded-lg border border-warning/20 bg-warning/10 p-3 text-sm text-warning" role="alert">
+    <div
+      v-if="errorKey"
+      class="shrink-0 flex items-start gap-3 rounded-lg border border-warning/20 bg-warning/10 p-3 text-sm text-warning"
+      role="alert"
+    >
       <AlertCircle class="mt-0.5 h-4 w-4 shrink-0" />
       <span>{{ t(errorKey) }}</span>
     </div>
-    <div v-if="successKey" class="shrink-0 flex items-start gap-3 rounded-lg border border-emerald-400/20 bg-emerald-500/10 p-3 text-sm text-emerald-600 dark:text-emerald-300" role="status">
+    <div
+      v-if="successKey"
+      class="shrink-0 flex items-start gap-3 rounded-lg border border-emerald-400/20 bg-emerald-500/10 p-3 text-sm text-emerald-600 dark:text-emerald-300"
+      role="status"
+    >
       <CheckCircle2 class="mt-0.5 h-4 w-4 shrink-0" />
       <span>{{ t(successKey) }}</span>
     </div>
 
     <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/50 bg-card shadow-sm">
-      <div class="flex shrink-0 flex-col gap-2 border-b border-border/50 p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        class="flex shrink-0 flex-col gap-2 border-b border-border/50 p-3 sm:flex-row sm:items-center sm:justify-between"
+      >
         <div class="min-w-0">
-          <h2 class="truncate text-base font-semibold text-foreground">{{ t('admin.massEmail.users.title') }}</h2>
-          <p class="text-sm text-muted-foreground">{{ t('admin.massEmail.pagination.pageSize', { pageSize }) }}</p>
+          <h2 class="truncate text-base font-semibold text-foreground">
+            {{ t('admin.massEmail.users.title') }}
+          </h2>
+          <p class="text-sm text-muted-foreground">
+            {{ t('admin.massEmail.pagination.pageSize', { pageSize }) }}
+          </p>
         </div>
-        <div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <Button variant="secondary" size="sm" class="rounded-lg" :disabled="userPage <= 1 || isLoadingUsers" @click="changePage(userPage - 1)">
-            {{ t('admin.massEmail.pagination.previous') }}
-          </Button>
-          <span>{{ t('admin.massEmail.pagination.currentPage', { page: userPage, totalPages: totalUserPages }) }}</span>
-          <Button variant="secondary" size="sm" class="rounded-lg" :disabled="userPage >= totalUserPages || isLoadingUsers" @click="changePage(userPage + 1)">
-            {{ t('admin.massEmail.pagination.next') }}
-          </Button>
-        </div>
+        <NPagination
+          :page="userPage"
+          :page-count="Math.max(1, totalUserPages)"
+          :disabled="isLoadingUsers"
+          simple
+          size="small"
+          @update:page="changePage($event)"
+        />
       </div>
 
-      <div v-if="isLoadingUsers" class="flex flex-1 items-center justify-center py-16 text-muted-foreground" role="status">
+      <div
+        v-if="isLoadingUsers"
+        class="flex flex-1 items-center justify-center py-16 text-muted-foreground"
+        role="status"
+      >
         <Loader2 class="mr-2 h-5 w-5 animate-spin" />
         {{ t('admin.massEmail.status.loadingUsers') }}
       </div>
-      <div v-else-if="users.length === 0" class="flex flex-1 flex-col items-center justify-center py-16 text-center text-muted-foreground">
+      <div
+        v-else-if="users.length === 0"
+        class="flex flex-1 flex-col items-center justify-center py-16 text-center text-muted-foreground"
+      >
         <Mail class="mb-3 h-10 w-10 opacity-40" />
-        <p class="font-medium text-foreground">{{ t('admin.massEmail.empty.usersTitle') }}</p>
+        <p class="font-medium text-foreground">
+          {{ t('admin.massEmail.empty.usersTitle') }}
+        </p>
         <p class="text-sm">{{ t('admin.massEmail.empty.usersDescription') }}</p>
       </div>
       <div v-else class="min-h-0 flex-1 overflow-auto">
-        <table class="w-full min-w-[760px] text-left text-sm">
+        <UiTable class="w-full min-w-[760px] text-left text-sm">
           <thead class="sticky top-0 z-10 bg-surface text-xs uppercase text-muted-foreground">
             <tr>
               <th class="w-12 px-4 py-3">
-                <input ref="selectAllRef" type="checkbox" class="h-4 w-4 rounded border-border bg-surface text-primary focus:ring-2 focus:ring-primary" :checked="isCurrentPageChecked" :aria-label="t('admin.massEmail.selection.selectPage')" @change="toggleCurrentPage" />
+                <UiChoice
+                  type="checkbox"
+                  :indeterminate="isCurrentPageIndeterminate"
+                  :checked="isCurrentPageChecked"
+                  :aria-label="t('admin.massEmail.selection.selectPage')"
+                  @change="toggleCurrentPage"
+                />
               </th>
               <th class="px-4 py-3">
-                <button type="button" class="inline-flex items-center gap-1 font-semibold outline-none focus-visible:ring-2 focus-visible:ring-primary" @click="toggleSort('email')">
+                <UiButton
+                  attr-type="button"
+                  class="inline-flex items-center gap-1 font-semibold outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  @click="toggleSort('email')"
+                >
                   {{ t('admin.massEmail.fields.email') }}
                   <ChevronUp v-if="sortBy === 'email' && sortOrder === 'asc'" class="h-3 w-3" />
                   <ChevronDown v-else class="h-3 w-3" />
-                </button>
+                </UiButton>
               </th>
               <th class="px-4 py-3">{{ t('admin.massEmail.fields.role') }}</th>
-              <th class="px-4 py-3">{{ t('admin.massEmail.fields.status') }}</th>
               <th class="px-4 py-3">
-                <button type="button" class="inline-flex items-center gap-1 font-semibold outline-none focus-visible:ring-2 focus-visible:ring-primary" @click="toggleSort('created_at')">
+                {{ t('admin.massEmail.fields.status') }}
+              </th>
+              <th class="px-4 py-3">
+                <UiButton
+                  attr-type="button"
+                  class="inline-flex items-center gap-1 font-semibold outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  @click="toggleSort('created_at')"
+                >
                   {{ t('admin.massEmail.fields.createdAt') }}
                   <ChevronUp v-if="sortBy === 'created_at' && sortOrder === 'asc'" class="h-3 w-3" />
                   <ChevronDown v-else class="h-3 w-3" />
-                </button>
+                </UiButton>
               </th>
-              <th class="px-4 py-3 text-right">{{ t('admin.massEmail.fields.actions') }}</th>
+              <th class="px-4 py-3 text-right">
+                {{ t('admin.massEmail.fields.actions') }}
+              </th>
             </tr>
           </thead>
           <tbody class="divide-y divide-border/50">
             <tr v-for="user in users" :key="user.id" class="hover:bg-surface/70">
               <td class="px-4 py-3">
-                <input type="checkbox" class="h-4 w-4 rounded border-border bg-surface text-primary focus:ring-2 focus:ring-primary" :checked="selectedIds.has(user.id)" :aria-label="t('admin.massEmail.selection.selectUser', { email: user.email })" @change="toggleUser(user.id)" />
+                <UiChoice
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-border bg-surface text-primary focus:ring-2 focus:ring-primary"
+                  :checked="selectedIds.has(user.id)"
+                  :aria-label="
+                    t('admin.massEmail.selection.selectUser', {
+                      email: user.email,
+                    })
+                  "
+                  @change="toggleUser(user.id)"
+                />
               </td>
               <td class="px-4 py-3">
                 <div class="font-medium text-foreground">{{ user.email }}</div>
-                <div class="text-xs text-muted-foreground">{{ user.name || user.username || user.id }}</div>
+                <div class="text-xs text-muted-foreground">
+                  {{ user.name || user.username || user.id }}
+                </div>
               </td>
-              <td class="px-4 py-3 text-muted-foreground">{{ t(`admin.massEmail.roles.${user.role}`) }}</td>
-              <td class="px-4 py-3 text-muted-foreground">{{ t(`admin.massEmail.userStatus.${user.status}`) }}</td>
-              <td class="px-4 py-3 text-muted-foreground">{{ formatDateTime(user.createdAt) }}</td>
+              <td class="px-4 py-3 text-muted-foreground">
+                {{ t(`admin.massEmail.roles.${user.role}`) }}
+              </td>
+              <td class="px-4 py-3 text-muted-foreground">
+                {{ t(`admin.massEmail.userStatus.${user.status}`) }}
+              </td>
+              <td class="px-4 py-3 text-muted-foreground">
+                {{ formatDateTime(user.createdAt) }}
+              </td>
               <td class="px-4 py-3 text-right">
-                <Button size="sm" class="rounded-lg" :disabled="isSubmitting" @click="openSendConfirm('selected', [user.id])">
+                <Button
+                  size="sm"
+                  class="rounded-lg"
+                  :disabled="isSubmitting"
+                  @click="openSendConfirm('selected', [user.id])"
+                >
                   <Send class="h-4 w-4" />
                   {{ t('admin.massEmail.actions.sendRow') }}
                 </Button>
               </td>
             </tr>
           </tbody>
-        </table>
+        </UiTable>
       </div>
     </section>
 
-    <div v-if="confirmOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-3 backdrop-blur-sm" role="dialog" aria-modal="true" :aria-labelledby="'mass-email-confirm-title'">
-      <div class="flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col rounded-lg border border-border/60 bg-card shadow-xl">
+    <UiModal
+      v-if="confirmOpen"
+      :show="Boolean(confirmOpen)"
+      :z-index="50"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="'mass-email-confirm-title'"
+    >
+      <div
+        class="flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col rounded-lg border border-border/60 bg-card shadow-xl"
+      >
         <div class="flex shrink-0 items-start justify-between gap-4 border-b border-border/50 p-4">
           <div class="min-w-0">
-            <h2 id="mass-email-confirm-title" class="truncate text-lg font-semibold text-foreground">{{ t(confirmTitleKey) }}</h2>
-            <p class="mt-1 text-sm text-muted-foreground">{{ t(confirmDescriptionKey, { count: confirmRecipientCount }) }}</p>
+            <h2 id="mass-email-confirm-title" class="truncate text-lg font-semibold text-foreground">
+              {{ t(confirmTitleKey) }}
+            </h2>
+            <p class="mt-1 text-sm text-muted-foreground">
+              {{ t(confirmDescriptionKey, { count: confirmRecipientCount }) }}
+            </p>
           </div>
-          <button type="button" class="rounded-lg p-2 text-muted-foreground outline-none hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary" :aria-label="t('admin.massEmail.actions.closeConfirm')" :disabled="isSubmitting" @click="closeConfirm">
+          <UiButton
+            attr-type="button"
+            class="rounded-lg p-2 text-muted-foreground outline-none hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary"
+            :aria-label="t('admin.massEmail.actions.closeConfirm')"
+            :disabled="isSubmitting"
+            @click="closeConfirm"
+          >
             <X class="h-4 w-4" />
-          </button>
+          </UiButton>
         </div>
         <div class="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
           <div class="rounded-lg bg-surface p-3 text-sm text-muted-foreground">
-            <p>{{ t('admin.massEmail.confirm.recipients', { count: confirmRecipientCount }) }}</p>
-            <p>{{ t('admin.massEmail.confirm.filters', { status: statusFilter ? t(`admin.massEmail.userStatus.${statusFilter}`) : t('admin.massEmail.filters.allStatuses'), role: roleFilter ? t(`admin.massEmail.roles.${roleFilter}`) : t('admin.massEmail.filters.allRoles'), search: searchFilter || t('admin.massEmail.filters.noSearch') }) }}</p>
+            <p>
+              {{
+                t('admin.massEmail.confirm.recipients', {
+                  count: confirmRecipientCount,
+                })
+              }}
+            </p>
+            <p>
+              {{
+                t('admin.massEmail.confirm.filters', {
+                  status: statusFilter
+                    ? t(`admin.massEmail.userStatus.${statusFilter}`)
+                    : t('admin.massEmail.filters.allStatuses'),
+                  role: roleFilter ? t(`admin.massEmail.roles.${roleFilter}`) : t('admin.massEmail.filters.allRoles'),
+                  search: searchFilter || t('admin.massEmail.filters.noSearch'),
+                })
+              }}
+            </p>
           </div>
           <label class="space-y-1 text-sm font-medium text-foreground">
             <span>{{ t('admin.massEmail.template.label') }}</span>
-            <select v-model="selectedTemplateId" class="h-10 w-full rounded-lg border border-border/60 bg-surface px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary" :disabled="isLoadingTemplates">
-              <option value="">{{ t('admin.massEmail.template.placeholder') }}</option>
-              <option v-for="template in templates" :key="template.id" :value="template.id">
+            <UiSelect
+              v-model="selectedTemplateId"
+              class="h-10 w-full rounded-lg border border-border/60 bg-surface px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              :disabled="isLoadingTemplates"
+            >
+              <UiOption value="">{{ t('admin.massEmail.template.placeholder') }}</UiOption>
+              <UiOption v-for="template in templates" :key="template.id" :value="template.id">
                 {{ template.name }}
-              </option>
-            </select>
+              </UiOption>
+            </UiSelect>
           </label>
           <div class="rounded-lg border border-border/50 bg-surface p-3 text-sm text-muted-foreground">
-            <span class="font-medium text-foreground">{{ selectedTemplate?.subject || t('admin.massEmail.template.noSubject') }}</span>
+            <span class="font-medium text-foreground">{{
+              selectedTemplate?.subject || t('admin.massEmail.template.noSubject')
+            }}</span>
           </div>
         </div>
         <div class="flex shrink-0 flex-col-reverse gap-2 border-t border-border/50 p-4 sm:flex-row sm:justify-end">
-          <Button variant="secondary" class="rounded-lg" :disabled="isSubmitting" @click="closeConfirm">{{ t('admin.massEmail.confirm.cancel') }}</Button>
+          <Button variant="secondary" class="rounded-lg" :disabled="isSubmitting" @click="closeConfirm">{{
+            t('admin.massEmail.confirm.cancel')
+          }}</Button>
           <Button variant="secondary" class="rounded-lg" :disabled="!selectedTemplate" @click="openPreview">
             <Eye class="h-4 w-4" />
             {{ t('admin.massEmail.actions.previewTemplate') }}
@@ -709,50 +887,119 @@ onBeforeUnmount(() => {
           </Button>
         </div>
       </div>
-    </div>
+    </UiModal>
 
-    <div v-if="isPreviewOpen" class="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 p-3 backdrop-blur-sm" role="dialog" aria-modal="true" :aria-labelledby="'mass-email-preview-title'">
-      <div class="flex max-h-[calc(100dvh-2rem)] w-full max-w-4xl flex-col rounded-lg border border-border/60 bg-card shadow-xl">
+    <UiModal
+      v-if="isPreviewOpen"
+      :show="Boolean(isPreviewOpen)"
+      :z-index="60"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="'mass-email-preview-title'"
+    >
+      <div
+        class="flex max-h-[calc(100dvh-2rem)] w-full max-w-4xl flex-col rounded-lg border border-border/60 bg-card shadow-xl"
+      >
         <div class="flex shrink-0 items-start justify-between gap-4 border-b border-border/50 p-4">
           <div class="min-w-0">
-            <h2 id="mass-email-preview-title" class="truncate text-lg font-semibold text-foreground">{{ t('admin.massEmail.preview.title') }}</h2>
-            <p class="truncate text-sm text-muted-foreground">{{ selectedTemplate?.subject || t('admin.massEmail.template.noSubject') }}</p>
+            <h2 id="mass-email-preview-title" class="truncate text-lg font-semibold text-foreground">
+              {{ t('admin.massEmail.preview.title') }}
+            </h2>
+            <p class="truncate text-sm text-muted-foreground">
+              {{ selectedTemplate?.subject || t('admin.massEmail.template.noSubject') }}
+            </p>
           </div>
-          <button type="button" class="rounded-lg p-2 text-muted-foreground outline-none hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary" :aria-label="t('admin.massEmail.preview.close')" @click="closePreview">
+          <UiButton
+            attr-type="button"
+            class="rounded-lg p-2 text-muted-foreground outline-none hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary"
+            :aria-label="t('admin.massEmail.preview.close')"
+            @click="closePreview"
+          >
             <X class="h-4 w-4" />
-          </button>
+          </UiButton>
         </div>
         <div class="min-h-0 flex-1 overflow-auto p-4">
-          <iframe :srcdoc="previewDocument" sandbox="" referrerpolicy="no-referrer" :title="t('admin.massEmail.preview.iframeTitle')" class="h-[70vh] min-h-[22rem] w-full bg-white" />
+          <iframe
+            :srcdoc="previewDocument"
+            sandbox=""
+            referrerpolicy="no-referrer"
+            :title="t('admin.massEmail.preview.iframeTitle')"
+            class="h-[70vh] min-h-[22rem] w-full bg-white"
+          />
         </div>
       </div>
-    </div>
+    </UiModal>
 
-    <div v-if="isBatchListOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-3 backdrop-blur-sm" role="dialog" aria-modal="true" :aria-labelledby="'mass-email-batches-title'">
-      <div class="flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col rounded-lg border border-border/60 bg-card shadow-xl">
+    <UiModal
+      v-if="isBatchListOpen"
+      :show="Boolean(isBatchListOpen)"
+      :z-index="50"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="'mass-email-batches-title'"
+    >
+      <div
+        class="flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col rounded-lg border border-border/60 bg-card shadow-xl"
+      >
         <div class="flex shrink-0 items-center justify-between gap-4 border-b border-border/50 p-4">
-          <h2 id="mass-email-batches-title" class="text-lg font-semibold text-foreground">{{ t('admin.massEmail.batches.title') }}</h2>
-          <button type="button" class="rounded-lg p-2 text-muted-foreground outline-none hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary" :aria-label="t('admin.massEmail.batches.close')" @click="closeBatchList">
+          <h2 id="mass-email-batches-title" class="text-lg font-semibold text-foreground">
+            {{ t('admin.massEmail.batches.title') }}
+          </h2>
+          <UiButton
+            attr-type="button"
+            class="rounded-lg p-2 text-muted-foreground outline-none hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary"
+            :aria-label="t('admin.massEmail.batches.close')"
+            @click="closeBatchList"
+          >
             <X class="h-4 w-4" />
-          </button>
+          </UiButton>
         </div>
         <div class="min-h-0 flex-1 overflow-y-auto">
-          <div v-if="batches.length === 0" class="py-10 text-center text-sm text-muted-foreground">{{ t('admin.massEmail.empty.batches') }}</div>
+          <div v-if="batches.length === 0" class="py-10 text-center text-sm text-muted-foreground">
+            {{ t('admin.massEmail.empty.batches') }}
+          </div>
           <div v-else class="divide-y divide-border/50">
             <div v-for="batch in batches" :key="batch.id" class="p-4 transition hover:bg-surface/70">
               <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
-                    <span class="truncate font-medium text-foreground">{{ batch.templateName || batch.templateSubject || batch.templateId }}</span>
-                    <span class="rounded-full border px-2 py-0.5 text-xs font-medium" :class="batchStatusClass(batch.status)">{{ t(`admin.massEmail.batchStatus.${batch.status}`) }}</span>
+                    <span class="truncate font-medium text-foreground">{{
+                      batch.templateName || batch.templateSubject || batch.templateId
+                    }}</span>
+                    <span
+                      class="rounded-full border px-2 py-0.5 text-xs font-medium"
+                      :class="batchStatusClass(batch.status)"
+                      >{{ t(`admin.massEmail.batchStatus.${batch.status}`) }}</span
+                    >
                   </div>
-                  <p class="mt-1 text-xs text-muted-foreground">{{ formatDateTime(batch.createdAt) }}</p>
+                  <p class="mt-1 text-xs text-muted-foreground">
+                    {{ formatDateTime(batch.createdAt) }}
+                  </p>
                 </div>
-                <div class="text-sm text-muted-foreground">{{ t('admin.massEmail.batches.progress', { done: terminalBatchCount(batch), total: batch.recipientCount, percent: batchProgress(batch) }) }}</div>
+                <div class="text-sm text-muted-foreground">
+                  {{
+                    t('admin.massEmail.batches.progress', {
+                      done: terminalBatchCount(batch),
+                      total: batch.recipientCount,
+                      percent: batchProgress(batch),
+                    })
+                  }}
+                </div>
               </div>
-              <div class="mt-3 h-2 overflow-hidden rounded-full bg-surface-line">
-                <div class="h-full bg-primary transition-all" :style="{ width: `${batchProgress(batch)}%` }" />
-              </div>
+              <NProgress
+                type="line"
+                :percentage="batchProgress(batch)"
+                :show-indicator="false"
+                :height="8"
+                class="mt-3"
+                :aria-label="
+                  t('admin.massEmail.batches.progress', {
+                    done: terminalBatchCount(batch),
+                    total: batch.recipientCount,
+                    percent: batchProgress(batch),
+                  })
+                "
+              />
               <div class="mt-3 flex justify-end border-t border-border/50 pt-3">
                 <Button variant="secondary" size="sm" class="rounded-lg" @click="selectBatchFromList(batch)">
                   <FileText class="h-4 w-4" />
@@ -763,51 +1010,120 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
-    </div>
+    </UiModal>
 
-    <div v-if="isBatchDetailOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-3 backdrop-blur-sm" role="dialog" aria-modal="true" :aria-labelledby="'mass-email-detail-title'">
-      <div class="flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col rounded-lg border border-border/60 bg-card shadow-xl">
+    <UiModal
+      v-if="isBatchDetailOpen"
+      :show="Boolean(isBatchDetailOpen)"
+      :z-index="50"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="'mass-email-detail-title'"
+    >
+      <div
+        class="flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col rounded-lg border border-border/60 bg-card shadow-xl"
+      >
         <div class="flex shrink-0 items-center justify-between gap-4 border-b border-border/50 p-4">
-          <h2 id="mass-email-detail-title" class="text-lg font-semibold text-foreground">{{ t('admin.massEmail.detail.title') }}</h2>
+          <h2 id="mass-email-detail-title" class="text-lg font-semibold text-foreground">
+            {{ t('admin.massEmail.detail.title') }}
+          </h2>
           <div class="flex items-center gap-2">
-            <Button v-if="selectedBatch && activeBatchStatuses.includes(selectedBatch.status)" variant="destructive" size="sm" class="rounded-lg" :disabled="isCancelling" @click="cancelBatch(selectedBatch)">
+            <Button
+              v-if="selectedBatch && activeBatchStatuses.includes(selectedBatch.status)"
+              variant="destructive"
+              size="sm"
+              class="rounded-lg"
+              :disabled="isCancelling"
+              @click="cancelBatch(selectedBatch)"
+            >
               <Ban class="h-4 w-4" />
               {{ t('admin.massEmail.actions.cancelBatch') }}
             </Button>
-            <button type="button" class="rounded-lg p-2 text-muted-foreground outline-none hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary" :aria-label="t('admin.massEmail.detail.close')" @click="closeBatchDetail">
+            <UiButton
+              attr-type="button"
+              class="rounded-lg p-2 text-muted-foreground outline-none hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary"
+              :aria-label="t('admin.massEmail.detail.close')"
+              @click="closeBatchDetail"
+            >
               <X class="h-4 w-4" />
-            </button>
+            </UiButton>
           </div>
         </div>
-        <div v-if="!selectedBatch" class="py-10 text-center text-sm text-muted-foreground">{{ t('admin.massEmail.empty.detail') }}</div>
+        <div v-if="!selectedBatch" class="py-10 text-center text-sm text-muted-foreground">
+          {{ t('admin.massEmail.empty.detail') }}
+        </div>
         <div v-else class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-4">
           <div class="grid shrink-0 grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-            <div class="rounded-lg bg-surface p-3"><p class="text-xs text-muted-foreground">{{ t('admin.massEmail.summary.sent') }}</p><p class="font-semibold text-foreground">{{ selectedBatch.sentCount }}</p></div>
-            <div class="rounded-lg bg-surface p-3"><p class="text-xs text-muted-foreground">{{ t('admin.massEmail.summary.failed') }}</p><p class="font-semibold text-foreground">{{ selectedBatch.failedCount }}</p></div>
-            <div class="rounded-lg bg-surface p-3"><p class="text-xs text-muted-foreground">{{ t('admin.massEmail.summary.uncertain') }}</p><p class="font-semibold text-foreground">{{ selectedBatch.uncertainCount }}</p></div>
-            <div class="rounded-lg bg-surface p-3"><p class="text-xs text-muted-foreground">{{ t('admin.massEmail.summary.cancelled') }}</p><p class="font-semibold text-foreground">{{ selectedBatch.cancelledCount }}</p></div>
-          </div>
-          <div class="flex shrink-0 flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-            <span>{{ t('admin.massEmail.detail.recipients', { total: batchItemTotal }) }}</span>
-            <div class="flex flex-wrap items-center gap-2">
-              <Button variant="secondary" size="sm" class="rounded-lg" :disabled="batchItemPage <= 1 || isLoadingItems" @click="batchItemPage--; loadBatchItems()">{{ t('admin.massEmail.pagination.previous') }}</Button>
-              <span>{{ t('admin.massEmail.pagination.currentPage', { page: batchItemPage, totalPages: batchItemTotalPages }) }}</span>
-              <Button variant="secondary" size="sm" class="rounded-lg" :disabled="batchItemPage >= batchItemTotalPages || isLoadingItems" @click="batchItemPage++; loadBatchItems()">{{ t('admin.massEmail.pagination.next') }}</Button>
+            <div class="rounded-lg bg-surface p-3">
+              <p class="text-xs text-muted-foreground">
+                {{ t('admin.massEmail.summary.sent') }}
+              </p>
+              <p class="font-semibold text-foreground">
+                {{ selectedBatch.sentCount }}
+              </p>
+            </div>
+            <div class="rounded-lg bg-surface p-3">
+              <p class="text-xs text-muted-foreground">
+                {{ t('admin.massEmail.summary.failed') }}
+              </p>
+              <p class="font-semibold text-foreground">
+                {{ selectedBatch.failedCount }}
+              </p>
+            </div>
+            <div class="rounded-lg bg-surface p-3">
+              <p class="text-xs text-muted-foreground">
+                {{ t('admin.massEmail.summary.uncertain') }}
+              </p>
+              <p class="font-semibold text-foreground">
+                {{ selectedBatch.uncertainCount }}
+              </p>
+            </div>
+            <div class="rounded-lg bg-surface p-3">
+              <p class="text-xs text-muted-foreground">
+                {{ t('admin.massEmail.summary.cancelled') }}
+              </p>
+              <p class="font-semibold text-foreground">
+                {{ selectedBatch.cancelledCount }}
+              </p>
             </div>
           </div>
-          <div v-if="isLoadingItems" class="flex flex-1 items-center justify-center py-8 text-sm text-muted-foreground"><Loader2 class="mr-2 h-4 w-4 animate-spin" />{{ t('admin.massEmail.status.loadingItems') }}</div>
-          <div v-else class="min-h-0 flex-1 overflow-y-auto divide-y divide-border/50 rounded-lg border border-border/50">
+          <div
+            class="flex shrink-0 flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between"
+          >
+            <span>{{ t('admin.massEmail.detail.recipients', { total: batchItemTotal }) }}</span>
+            <NPagination
+              :page="batchItemPage"
+              :page-count="Math.max(1, batchItemTotalPages)"
+              :disabled="isLoadingItems"
+              simple
+              size="small"
+              @update:page="changeBatchItemPage"
+            />
+          </div>
+          <div v-if="isLoadingItems" class="flex flex-1 items-center justify-center py-8 text-sm text-muted-foreground">
+            <Loader2 class="mr-2 h-4 w-4 animate-spin" />{{ t('admin.massEmail.status.loadingItems') }}
+          </div>
+          <div
+            v-else
+            class="min-h-0 flex-1 overflow-y-auto divide-y divide-border/50 rounded-lg border border-border/50"
+          >
             <div v-for="item in batchItems" :key="item.id" class="p-3 text-sm">
               <div class="flex items-center justify-between gap-3">
                 <span class="min-w-0 truncate font-medium text-foreground">{{ item.recipientEmail }}</span>
-                <span class="shrink-0 font-medium" :class="itemStatusClass(item.status)">{{ t(`admin.massEmail.itemStatus.${item.status}`) }}</span>
+                <span class="shrink-0 font-medium" :class="itemStatusClass(item.status)">{{
+                  t(`admin.massEmail.itemStatus.${item.status}`)
+                }}</span>
               </div>
-              <p class="mt-1 text-xs text-muted-foreground">{{ item.username || item.upstreamUserId || item.id }}</p>
-              <p class="mt-1 text-xs text-muted-foreground">{{ itemErrorText(item) }}</p>
+              <p class="mt-1 text-xs text-muted-foreground">
+                {{ item.username || item.upstreamUserId || item.id }}
+              </p>
+              <p class="mt-1 text-xs text-muted-foreground">
+                {{ itemErrorText(item) }}
+              </p>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </UiModal>
   </div>
 </template>

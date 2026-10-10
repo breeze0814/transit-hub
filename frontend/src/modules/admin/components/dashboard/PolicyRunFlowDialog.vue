@@ -54,53 +54,42 @@ const stepKeys = [
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
+  <UiModal v-if="open" :show="Boolean(open)" :z-index="160" @mask-click="emit('close')" @esc="emit('close')">
+    <div
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="titleId"
+      :aria-describedby="descriptionId"
+      class="relative flex h-[min(680px,calc(100dvh-2rem))] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl"
     >
-      <div v-if="open" class="fixed inset-0 z-[160] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-background/60 backdrop-blur-sm" @click="emit('close')" />
-
-        <div
-          role="dialog"
-          aria-modal="true"
-          :aria-labelledby="titleId"
-          :aria-describedby="descriptionId"
-        class="relative flex h-[min(680px,calc(100dvh-2rem))] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl"
-        >
-          <div class="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-5 py-4">
-            <div class="flex min-w-0 items-center gap-2.5">
-              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <BookOpenText class="h-4 w-4" />
-              </div>
-              <div class="min-w-0">
-                <h3 :id="titleId" class="text-sm font-semibold text-foreground">{{ t(`${prefix}.title`) }}</h3>
-                <p :id="descriptionId" class="truncate text-xs text-muted-foreground">{{ t(`${prefix}.subtitle`) }}</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              :aria-label="t(`${prefix}.close`)"
-              class="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
-              @click="emit('close')"
-            >
-              <X class="h-4 w-4" />
-            </button>
+      <div class="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-5 py-4">
+        <div class="flex min-w-0 items-center gap-2.5">
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <BookOpenText class="h-4 w-4" />
           </div>
-
-          <div class="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-            <div v-for="stepKey in stepKeys" :key="stepKey" class="rounded-lg border border-border/40 bg-surface/30 p-3.5">
-              <h4 class="text-sm font-semibold text-foreground">{{ t(`${prefix}.steps.${stepKey}.title`) }}</h4>
-              <p class="mt-1.5 text-xs leading-relaxed text-muted-foreground">{{ t(`${prefix}.steps.${stepKey}.description`) }}</p>
-            </div>
+          <div class="min-w-0">
+            <h3 :id="titleId" class="text-sm font-semibold text-foreground">{{ t(`${prefix}.title`) }}</h3>
+            <p :id="descriptionId" class="truncate text-xs text-muted-foreground">{{ t(`${prefix}.subtitle`) }}</p>
           </div>
         </div>
+        <UiButton
+          attr-type="button"
+          :aria-label="t(`${prefix}.close`)"
+          class="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
+          @click="emit('close')"
+        >
+          <X class="h-4 w-4" />
+        </UiButton>
       </div>
-    </Transition>
-  </Teleport>
+
+      <div class="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+        <div v-for="stepKey in stepKeys" :key="stepKey" class="rounded-lg border border-border/40 bg-surface/30 p-3.5">
+          <h4 class="text-sm font-semibold text-foreground">{{ t(`${prefix}.steps.${stepKey}.title`) }}</h4>
+          <p class="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+            {{ t(`${prefix}.steps.${stepKey}.description`) }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </UiModal>
 </template>

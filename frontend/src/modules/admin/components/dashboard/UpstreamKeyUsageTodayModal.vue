@@ -71,116 +71,113 @@ watch(() => props.open, (isOpen) => {
 </script>
 
 <template>
-  <Teleport defer to="body">
-    <div v-if="open" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div class="absolute inset-0 bg-background/80 backdrop-blur-sm" @click="emit('close')"></div>
+  <UiModal v-if="open" :show="Boolean(open)" :z-index="100" @mask-click="emit('close')" @esc="emit('close')">
+    <div
+      role="dialog"
+      aria-modal="true"
+      class="relative w-full max-w-3xl overflow-hidden rounded-[2rem] border border-border/60 bg-card text-card-foreground shadow-2xl shadow-primary/10 animate-in fade-in zoom-in-95 duration-200"
+    >
+      <div class="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-primary via-accent to-primary" />
 
-      <div
-        role="dialog"
-        aria-modal="true"
-        class="relative w-full max-w-3xl overflow-hidden rounded-[2rem] border border-border/60 bg-card text-card-foreground shadow-2xl shadow-primary/10 animate-in fade-in zoom-in-95 duration-200"
-      >
-        <div class="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-primary via-accent to-primary" />
-
-        <div class="flex items-start justify-between gap-4 px-6 pt-6">
-          <div class="flex items-center gap-3">
-            <div class="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <ShoppingCart class="h-5 w-5" />
-            </div>
-            <div>
-              <h2 class="text-lg font-semibold text-foreground">{{ t('admin.dashboard.upstreamKeyUsage.title') }}</h2>
-              <p class="text-sm text-muted-foreground">
-                {{ t('admin.dashboard.upstreamKeyUsage.subtitle', { count: keys.length, total: formatCny(total) }) }}
-              </p>
-            </div>
+      <div class="flex items-start justify-between gap-4 px-6 pt-6">
+        <div class="flex items-center gap-3">
+          <div class="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <ShoppingCart class="h-5 w-5" />
           </div>
-          <div class="flex items-center gap-2">
-            <button
-              type="button"
-              :disabled="loading || !!error || keys.length === 0"
-              class="inline-flex items-center gap-1.5 rounded-lg border border-border/60 px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground disabled:opacity-50"
-              @click="toggleSort"
-            >
-              <ArrowUpWideNarrow v-if="sortAsc" class="h-3.5 w-3.5" />
-              <ArrowDownWideNarrow v-else class="h-3.5 w-3.5" />
-              {{ sortAsc ? t('admin.dashboard.upstreamKeyUsage.sort.asc') : t('admin.dashboard.upstreamKeyUsage.sort.desc') }}
-            </button>
-            <button
-              type="button"
-              class="rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
-              :title="t('admin.dashboard.upstreamKeyUsage.close')"
-              @click="emit('close')"
-            >
-              <X class="h-5 w-5" />
-            </button>
+          <div>
+            <h2 class="text-lg font-semibold text-foreground">{{ t('admin.dashboard.upstreamKeyUsage.title') }}</h2>
+            <p class="text-sm text-muted-foreground">
+              {{ t('admin.dashboard.upstreamKeyUsage.subtitle', { count: keys.length, total: formatCny(total) }) }}
+            </p>
           </div>
         </div>
-
-        <div class="px-6 py-6">
-          <div v-if="loading" class="flex items-center justify-center py-12">
-            <Loader2 class="h-6 w-6 animate-spin text-primary/60" />
-          </div>
-
-          <div
-            v-else-if="error"
-            class="flex flex-col items-center justify-center gap-3 py-12 text-center"
+        <div class="flex items-center gap-2">
+          <UiButton
+            attr-type="button"
+            :disabled="loading || !!error || keys.length === 0"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-border/60 px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground disabled:opacity-50"
+            @click="toggleSort"
           >
-            <p class="text-sm text-muted-foreground">{{ t(error) }}</p>
-            <button
-              type="button"
-              class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-              @click="loadData"
-            >
-              <RefreshCw class="h-4 w-4" />
-              {{ t('admin.dashboard.upstreamKeyUsage.retry') }}
-            </button>
-          </div>
-
-          <div
-            v-else-if="failedSites > 0"
-            class="mb-4 flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 px-3 py-2.5 text-sm text-muted-foreground"
+            <ArrowUpWideNarrow v-if="sortAsc" class="h-3.5 w-3.5" />
+            <ArrowDownWideNarrow v-else class="h-3.5 w-3.5" />
+            {{
+              sortAsc ? t('admin.dashboard.upstreamKeyUsage.sort.asc') : t('admin.dashboard.upstreamKeyUsage.sort.desc')
+            }}
+          </UiButton>
+          <UiButton
+            attr-type="button"
+            class="rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
+            :title="t('admin.dashboard.upstreamKeyUsage.close')"
+            @click="emit('close')"
           >
-            <AlertTriangle class="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-            <span>{{ t('admin.dashboard.upstreamKeyUsage.partialWarning', { failed: failedSites, total: totalSites }) }}</span>
-          </div>
+            <X class="h-5 w-5" />
+          </UiButton>
+        </div>
+      </div>
 
-          <div
-            v-if="!loading && !error && sortedKeys.length === 0"
-            class="flex flex-col items-center justify-center gap-2 py-12 text-center"
+      <div class="px-6 py-6">
+        <div v-if="loading" class="flex items-center justify-center py-12">
+          <Loader2 class="h-6 w-6 animate-spin text-primary/60" />
+        </div>
+
+        <div v-else-if="error" class="flex flex-col items-center justify-center gap-3 py-12 text-center">
+          <p class="text-sm text-muted-foreground">{{ t(error) }}</p>
+          <UiButton
+            attr-type="button"
+            class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            @click="loadData"
           >
-            <ShoppingCart class="h-8 w-8 text-muted-foreground/40" />
-            <p class="text-sm text-muted-foreground">{{ t('admin.dashboard.upstreamKeyUsage.empty') }}</p>
-          </div>
+            <RefreshCw class="h-4 w-4" />
+            {{ t('admin.dashboard.upstreamKeyUsage.retry') }}
+          </UiButton>
+        </div>
 
-          <div v-else-if="!loading && !error" class="max-h-[60vh] overflow-y-auto rounded-xl border border-border/60">
-            <table class="w-full text-sm">
-              <thead class="sticky top-0 z-10 bg-surface/90 backdrop-blur">
-                <tr class="border-b border-border/60 text-left text-xs font-medium text-muted-foreground">
-                  <th class="px-4 py-3">{{ t('admin.dashboard.upstreamKeyUsage.columns.siteName') }}</th>
-                  <th class="px-4 py-3">{{ t('admin.dashboard.upstreamKeyUsage.columns.keyName') }}</th>
-                  <th class="px-4 py-3">{{ t('admin.dashboard.upstreamKeyUsage.columns.groupName') }}</th>
-                  <th class="px-4 py-3 text-right">{{ t('admin.dashboard.upstreamKeyUsage.columns.amount') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="item in sortedKeys"
-                  :key="`${item.siteId}-${item.keyId}`"
-                  class="border-b border-border/40 last:border-b-0"
-                >
-                  <td class="px-4 py-3 align-middle text-foreground">
-                    <div class="font-medium">{{ item.siteName }}</div>
-                    <div class="text-xs text-muted-foreground">{{ platformLabel(item.platform) }}</div>
-                  </td>
-                  <td class="px-4 py-3 align-middle font-medium text-foreground">{{ item.keyName }}</td>
-                  <td class="px-4 py-3 align-middle text-muted-foreground">{{ item.groupName }}</td>
-                  <td class="px-4 py-3 align-middle text-right text-foreground">{{ formatCny(item.todayAmount) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        <div
+          v-else-if="failedSites > 0"
+          class="mb-4 flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 px-3 py-2.5 text-sm text-muted-foreground"
+        >
+          <AlertTriangle class="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+          <span>{{
+            t('admin.dashboard.upstreamKeyUsage.partialWarning', { failed: failedSites, total: totalSites })
+          }}</span>
+        </div>
+
+        <div
+          v-if="!loading && !error && sortedKeys.length === 0"
+          class="flex flex-col items-center justify-center gap-2 py-12 text-center"
+        >
+          <ShoppingCart class="h-8 w-8 text-muted-foreground/40" />
+          <p class="text-sm text-muted-foreground">{{ t('admin.dashboard.upstreamKeyUsage.empty') }}</p>
+        </div>
+
+        <div v-else-if="!loading && !error" class="max-h-[60vh] overflow-y-auto rounded-xl border border-border/60">
+          <UiTable class="w-full text-sm">
+            <thead class="sticky top-0 z-10 bg-surface/90 backdrop-blur">
+              <tr class="border-b border-border/60 text-left text-xs font-medium text-muted-foreground">
+                <th class="px-4 py-3">{{ t('admin.dashboard.upstreamKeyUsage.columns.siteName') }}</th>
+                <th class="px-4 py-3">{{ t('admin.dashboard.upstreamKeyUsage.columns.keyName') }}</th>
+                <th class="px-4 py-3">{{ t('admin.dashboard.upstreamKeyUsage.columns.groupName') }}</th>
+                <th class="px-4 py-3 text-right">{{ t('admin.dashboard.upstreamKeyUsage.columns.amount') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="item in sortedKeys"
+                :key="`${item.siteId}-${item.keyId}`"
+                class="border-b border-border/40 last:border-b-0"
+              >
+                <td class="px-4 py-3 align-middle text-foreground">
+                  <div class="font-medium">{{ item.siteName }}</div>
+                  <div class="text-xs text-muted-foreground">{{ platformLabel(item.platform) }}</div>
+                </td>
+                <td class="px-4 py-3 align-middle font-medium text-foreground">{{ item.keyName }}</td>
+                <td class="px-4 py-3 align-middle text-muted-foreground">{{ item.groupName }}</td>
+                <td class="px-4 py-3 align-middle text-right text-foreground">{{ formatCny(item.todayAmount) }}</td>
+              </tr>
+            </tbody>
+          </UiTable>
         </div>
       </div>
     </div>
-  </Teleport>
+  </UiModal>
 </template>

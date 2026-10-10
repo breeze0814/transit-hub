@@ -1,4 +1,5 @@
 export default {
+  common: { confirmation: '确认操作', confirm: '确认', cancel: '取消' },
   brand: {
     name: 'TransitHub',
     logoAlt: 'TransitHub 徽标'

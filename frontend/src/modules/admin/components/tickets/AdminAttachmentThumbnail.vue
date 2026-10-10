@@ -53,15 +53,19 @@ const openFullSize = () => {
 </script>
 
 <template>
-  <button
-    type="button"
+  <UiButton
+    attr-type="button"
     class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border/50 bg-surface-elevated transition-colors hover:border-primary/50 disabled:cursor-default disabled:hover:border-border/50"
     :disabled="isLoading || hasError"
     :title="attachment.originalName"
     @click="openFullSize"
   >
     <Loader2 v-if="isLoading" class="h-4 w-4 animate-spin text-muted-foreground" />
-    <ImageOff v-else-if="hasError" class="h-4 w-4 text-muted-foreground" :aria-label="t('admin.tickets.detail.attachmentLoadFailed')" />
+    <ImageOff
+      v-else-if="hasError"
+      class="h-4 w-4 text-muted-foreground"
+      :aria-label="t('admin.tickets.detail.attachmentLoadFailed')"
+    />
     <img v-else :src="objectUrl!" :alt="attachment.originalName" class="h-full w-full object-cover" />
-  </button>
+  </UiButton>
 </template>

@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount, watch, type Component } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, h, ref, onMounted, onBeforeUnmount, watch, type Component } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { NDropdown, NDrawer, NDrawerContent, NTag, type MenuOption } from 'naive-ui'
 import { LayoutDashboard, Network, Settings, LogOut, Globe, Moon, Sun, Percent, Megaphone, ChevronDown, ArrowRightLeft, FolderTree, Link2, Activity, MessageSquare, Github, Mail, Menu, X, Trophy, Gift, Boxes } from 'lucide-vue-next'
-import { useDark, useToggle } from '@vueuse/core'
+import { useDark, useToggle, useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useAdminAccounts } from '../composables/useAdminAccounts'
 import { clearAccessToken } from '@/modules/auth/api/auth'
 import { getSystemVersion } from '../api/system'
 import type { SystemVersionResponse } from '../api/system'
 import logoUrl from '@/assets/logo.png'
+import AdminNavigation from './AdminNavigation.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -18,6 +20,8 @@ const isDark = useDark({
   attribute: 'class',
   valueDark: 'dark',
   valueLight: '',
+  initialValue: 'dark',
+  storageKey: 'transithub-color-scheme',
 })
 const toggleDark = useToggle(isDark)
 
@@ -65,8 +69,8 @@ const releaseUrl = computed(() => {
 const isWorkspaceSelectionPage = computed(() => route.name === 'AdminAccounts')
 
 const showUserMenu = ref(false)
-const userMenuRef = ref<HTMLElement | null>(null)
 const isMobileSidebarOpen = ref(false)
+const isDesktop = useMediaQuery('(min-width: 1024px)')
 
 const openMobileSidebar = () => {
   isMobileSidebarOpen.value = true
@@ -74,16 +78,6 @@ const openMobileSidebar = () => {
 
 const closeMobileSidebar = () => {
   isMobileSidebarOpen.value = false
-}
-
-const toggleUserMenu = () => {
-  showUserMenu.value = !showUserMenu.value
-}
-
-const handleClickOutside = (e: MouseEvent) => {
-  if (userMenuRef.value && !userMenuRef.value.contains(e.target as Node)) {
-    showUserMenu.value = false
-  }
 }
 
 const handleKeydown = (event: KeyboardEvent) => {
@@ -95,12 +89,10 @@ const handleKeydown = (event: KeyboardEvent) => {
 onMounted(() => {
   void loadCurrentAccount()
   void loadVersionInfo()
-  document.addEventListener('click', handleClickOutside)
   document.addEventListener('keydown', handleKeydown)
 })
 
 onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside)
   document.removeEventListener('keydown', handleKeydown)
 })
 
@@ -163,12 +155,27 @@ const isGroupExpanded = (group: Extract<MenuEntry, { type: 'group' }>) => {
   return manual === undefined ? isGroupActive(group) : manual
 }
 
-const toggleGroup = (group: Extract<MenuEntry, { type: 'group' }>) => {
-  expandedGroups.value[group.id] = !isGroupExpanded(group)
-}
-
 const handleMenuRouteClick = () => {
   closeMobileSidebar()
+}
+
+const navigationOptions = computed<MenuOption[]>(() => menuItems.value.map(item => item.type === 'leaf' ? {
+  key: item.path,
+  label: () => h(RouterLink, { to: item.path, onClick: handleMenuRouteClick }, () => item.name),
+  icon: () => h(item.icon),
+} : {
+  key: item.id,
+  label: item.name,
+  icon: () => h(item.icon),
+  children: item.children.map(child => ({
+    key: child.path,
+    label: () => h(RouterLink, { to: child.path, onClick: handleMenuRouteClick }, () => child.name),
+    icon: () => h(child.icon),
+  })),
+}))
+const navigationExpandedKeys = computed(() => menuItems.value.filter((item): item is Extract<MenuEntry, { type: 'group' }> => item.type === 'group' && isGroupExpanded(item)).map(item => item.id))
+const updateNavigationExpandedKeys = (keys: string[]) => {
+  for (const item of menuItems.value) if (item.type === 'group') expandedGroups.value[item.id] = keys.includes(item.id)
 }
 
 // 摊平查找当前路由对应的菜单文案，供顶部标题使用（叶子和分组子项都要能查到）。
@@ -192,6 +199,25 @@ const handleLogout = () => {
   router.push('/login')
 }
 
+const userMenuOptions = computed(() => [
+  {
+    key: 'identity',
+    type: 'render' as const,
+    render: () => h('div', { class: 'px-3 py-2 text-sm' }, [
+      h('div', { class: 'font-medium' }, currentAccount.value?.displayName ?? ''),
+      h('div', { class: 'mt-1 text-xs text-muted-foreground' }, currentAccount.value ? `${currentAccount.value.platform} · ${currentAccount.value.identity}` : ''),
+    ]),
+  },
+  { key: 'divider', type: 'divider' as const },
+  { key: 'workspaces', label: t('admin.layout.switchWorkspace'), icon: () => h(ArrowRightLeft, { class: 'h-4 w-4' }) },
+  { key: 'logout', label: t('admin.menu.signOut'), icon: () => h(LogOut, { class: 'h-4 w-4' }) },
+])
+
+const selectUserMenu = (key: string) => {
+  if (key === 'workspaces') goToAccounts()
+  else if (key === 'logout') handleLogout()
+}
+
 watch(
   () => route.fullPath,
   () => {
@@ -208,110 +234,46 @@ watch(
     >
       {{ t('admin.layout.skipToContent') }}
     </a>
-    <button
-      v-if="!isWorkspaceSelectionPage && isMobileSidebarOpen"
-      type="button"
-      class="fixed inset-0 z-40 bg-background/70 backdrop-blur-sm lg:hidden"
-      :aria-label="t('admin.layout.closeNavigation')"
-      @click="closeMobileSidebar"
-    />
-
-    <!-- Sidebar: 工作区选择页不显示 -->
-    <aside
-      v-if="!isWorkspaceSelectionPage"
-      id="admin-mobile-sidebar"
-      class="fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-border/40 bg-surface-elevated transition-transform duration-200 lg:static lg:z-auto lg:translate-x-0 lg:transition-none"
-      :class="isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-    >
-      <div class="h-16 flex items-center justify-between gap-3 px-4 lg:px-6 border-b border-border/40">
-        <div class="flex items-center gap-2">
-          <img :src="logoUrl" :alt="t('brand.logoAlt')" width="32" height="32" class="h-8 w-8 shrink-0 object-contain" />
-          <span class="text-xl font-bold tracking-tight text-foreground">{{ t('brand.name') }}</span>
-        </div>
-        <button
-          type="button"
-          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-line hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary lg:hidden"
-          :aria-label="t('admin.layout.closeNavigation')"
-          @click="closeMobileSidebar"
-        >
-          <X class="h-4 w-4" />
-        </button>
-      </div>
-
-      <nav class="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
-        <template v-for="item in menuItems" :key="item.type === 'leaf' ? item.path : item.id">
-          <router-link
-            v-if="item.type === 'leaf'"
-            :to="item.path"
-            class="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            :class="[
-              route.path === item.path
-                ? 'bg-primary text-primary-foreground font-medium shadow-md shadow-primary/20'
-                : 'text-muted-foreground hover:bg-surface-line hover:text-foreground'
-            ]"
-            @click="handleMenuRouteClick"
-          >
-            <component :is="item.icon" class="w-5 h-5" aria-hidden="true" />
-            {{ item.name }}
-          </router-link>
-
-          <div v-else>
-            <button
-              type="button"
-              class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              :aria-expanded="isGroupExpanded(item)"
-              :aria-controls="`admin-menu-${item.id}`"
-              :class="[
-                isGroupActive(item) && !isGroupExpanded(item)
-                  ? 'bg-primary/10 text-primary font-medium'
-                  : 'text-muted-foreground hover:bg-surface-line hover:text-foreground'
-              ]"
-              @click="toggleGroup(item)"
-            >
-              <component :is="item.icon" class="w-5 h-5" aria-hidden="true" />
-              <span class="flex-1 text-left">{{ item.name }}</span>
-              <ChevronDown class="w-4 h-4 transition-transform" :class="{ 'rotate-180': isGroupExpanded(item) }" aria-hidden="true" />
-            </button>
-
-            <div v-if="isGroupExpanded(item)" :id="`admin-menu-${item.id}`" class="mt-1 ml-4 space-y-1 border-l border-border/40 pl-3">
-              <router-link
-                v-for="child in item.children"
-                :key="child.path"
-                :to="child.path"
-                class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                :class="[
-                  route.path === child.path
-                    ? 'bg-primary text-primary-foreground font-medium shadow-md shadow-primary/20'
-                    : 'text-muted-foreground hover:bg-surface-line hover:text-foreground'
-                ]"
-                @click="handleMenuRouteClick"
-              >
-                <component :is="child.icon" class="w-4 h-4" aria-hidden="true" />
-                {{ child.name }}
-              </router-link>
-            </div>
-          </div>
-        </template>
-      </nav>
-
-      <div class="p-4 border-t border-border/40">
-        <button
-          @click="handleLogout"
-          class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-muted-foreground transition-colors hover:bg-surface-line hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <LogOut class="w-5 h-5" />
-          {{ t('admin.menu.signOut') }}
-        </button>
-      </div>
+    <aside v-if="!isWorkspaceSelectionPage && isDesktop" class="w-64 shrink-0 border-r border-border/40">
+      <AdminNavigation
+        :options="navigationOptions"
+        :selected="route.path"
+        :expanded-keys="navigationExpandedKeys"
+        @update:expanded-keys="updateNavigationExpandedKeys"
+        @logout="handleLogout"
+      />
     </aside>
+    <NDrawer
+      v-if="!isDesktop && !isWorkspaceSelectionPage"
+      v-model:show="isMobileSidebarOpen"
+      placement="left"
+      width="min(280px, 100vw)"
+      :z-index="100"
+    >
+      <NDrawerContent :body-content-style="{ padding: '0', height: '100%' }" :native-scrollbar="false">
+        <AdminNavigation
+          id="admin-mobile-sidebar"
+          mobile
+          :options="navigationOptions"
+          :selected="route.path"
+          :expanded-keys="navigationExpandedKeys"
+          @update:expanded-keys="updateNavigationExpandedKeys"
+          @close="closeMobileSidebar"
+          @logout="handleLogout"
+        />
+      </NDrawerContent>
+    </NDrawer>
 
     <!-- Main Content -->
     <div class="flex-1 flex flex-col min-w-0 w-full">
       <!-- Header: 工作区选择页不显示业务导航头 -->
-      <header v-if="!isWorkspaceSelectionPage" class="h-16 shrink-0 border-b border-border/40 bg-surface/50 backdrop-blur-md flex items-center justify-between gap-2 px-3 sm:px-6 sticky top-0 z-30">
+      <header
+        v-if="!isWorkspaceSelectionPage"
+        class="h-16 shrink-0 border-b border-border/40 bg-surface/50 backdrop-blur-md flex items-center justify-between gap-2 px-3 sm:px-6 sticky top-0 z-30"
+      >
         <div class="flex min-w-0 items-center gap-2">
-          <button
-            type="button"
+          <UiButton
+            attr-type="button"
             class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary lg:hidden"
             :aria-label="t('admin.layout.openNavigation')"
             :aria-expanded="isMobileSidebarOpen"
@@ -319,89 +281,105 @@ watch(
             @click="openMobileSidebar"
           >
             <Menu class="h-4 w-4" />
-          </button>
+          </UiButton>
           <h1 class="min-w-0 truncate text-base font-semibold sm:text-lg">{{ pageTitle }}</h1>
         </div>
 
         <div class="flex min-w-0 shrink-0 items-center gap-1 sm:gap-4">
           <div class="flex items-center gap-1 sm:gap-2">
             <!-- 版本号展示：点击跳转到对应 GitHub release（非正式发布占位版本号退回 releases 列表）。 -->
-            <a
+            <n-tag
               v-if="versionInfo"
+              :bordered="false"
+              size="small"
               :href="releaseUrl"
+              tag="a"
               target="_blank"
               rel="noopener noreferrer"
-              class="hidden sm:flex items-center gap-1 h-7 px-2 rounded-md text-xs font-medium text-muted-foreground hover:bg-surface-elevated hover:text-foreground transition-colors"
+              class="hidden sm:flex items-center gap-1 text-xs font-semibold no-underline"
               :title="t('admin.system.openRelease')"
               :aria-label="t('admin.system.openRelease')"
             >
               {{ versionLabel }}
-            </a>
+            </n-tag>
 
-            <a
+            <UiButton
+              quaternary
+              circle
+              size="small"
               :href="githubRepoUrl"
+              tag="a"
               target="_blank"
               rel="noopener noreferrer"
-              class="flex h-9 w-9 items-center justify-center rounded-full hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors"
               :title="t('admin.system.openGithubRepository')"
               :aria-label="t('admin.system.openGithubRepository')"
             >
               <Github class="h-4 w-4" />
-            </a>
+            </UiButton>
 
-            <button @click="toggleLocale" class="flex h-9 w-9 items-center justify-center rounded-full hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors" :title="t('admin.layout.toggleLanguage')" :aria-label="t('admin.layout.toggleLanguage')">
+            <UiButton
+              quaternary
+              circle
+              size="small"
+              @click="toggleLocale"
+              :title="t('admin.layout.toggleLanguage')"
+              :aria-label="t('admin.layout.toggleLanguage')"
+            >
               <Globe class="h-4 w-4" />
-            </button>
-            <button @click="toggleDark()" class="flex h-9 w-9 items-center justify-center rounded-full hover:bg-surface-elevated text-muted-foreground hover:text-foreground transition-colors" :title="t('admin.layout.toggleTheme')" :aria-label="t('admin.layout.toggleTheme')">
+            </UiButton>
+            <UiButton
+              quaternary
+              circle
+              size="small"
+              @click="toggleDark()"
+              :title="t('admin.layout.toggleTheme')"
+              :aria-label="t('admin.layout.toggleTheme')"
+            >
               <Moon v-if="!isDark" class="h-4 w-4" />
               <Sun v-else class="h-4 w-4" />
-            </button>
+            </UiButton>
           </div>
 
-          <div ref="userMenuRef" class="relative">
-            <button
-              @click="toggleUserMenu"
+          <NDropdown
+            trigger="click"
+            placement="bottom-end"
+            :options="userMenuOptions"
+            :show="showUserMenu"
+            @update:show="showUserMenu = $event"
+            @select="selectUserMenu"
+          >
+            <UiButton
               class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-surface-elevated transition-colors"
               :aria-label="t('admin.layout.userProfile')"
               :aria-expanded="showUserMenu"
             >
-              <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-accent shrink-0"></div>
-              <span v-if="currentAccount" class="text-sm font-medium text-foreground max-w-[120px] truncate hidden sm:inline">{{ currentAccount.displayName }}</span>
-              <ChevronDown class="h-3.5 w-3.5 text-muted-foreground" />
-            </button>
-
-            <transition name="dropdown">
               <div
-                v-if="showUserMenu"
-                class="absolute right-0 top-full mt-2 w-56 rounded-xl border border-border/60 bg-surface-elevated shadow-lg py-1 z-[60]"
+                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-sm font-semibold text-primary"
               >
-                <div v-if="currentAccount" class="px-3 py-2.5 border-b border-border/40">
-                  <div class="text-sm font-medium text-foreground truncate">{{ currentAccount.displayName }}</div>
-                  <div class="text-xs text-muted-foreground truncate">{{ currentAccount.platform }} · {{ currentAccount.identity }}</div>
-                </div>
-                <button
-                  @click="goToAccounts"
-                  class="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:bg-surface-line hover:text-foreground transition-colors"
-                >
-                  <ArrowRightLeft class="h-4 w-4" />
-                  {{ t('admin.layout.switchWorkspace') }}
-                </button>
-                <button
-                  @click="handleLogout"
-                  class="flex w-full items-center gap-2.5 px-3 py-2.5 text-sm text-muted-foreground hover:bg-surface-line hover:text-red-400 transition-colors"
-                >
-                  <LogOut class="h-4 w-4" />
-                  {{ t('admin.menu.signOut') }}
-                </button>
+                {{ currentAccount?.displayName?.slice(0, 1) || 'T' }}
               </div>
-            </transition>
-          </div>
+              <span
+                v-if="currentAccount"
+                class="text-sm font-medium text-foreground max-w-[120px] truncate hidden sm:inline"
+                >{{ currentAccount.displayName }}</span
+              >
+              <ChevronDown class="h-3.5 w-3.5 text-muted-foreground" />
+            </UiButton>
+          </NDropdown>
         </div>
       </header>
 
       <!-- Content Area -->
-      <main id="admin-main-content" class="flex-1 overflow-auto" :class="isWorkspaceSelectionPage ? '' : 'p-3 sm:p-6'" tabindex="-1">
-        <div v-if="!isWorkspaceSelectionPage && noticeKey" class="mb-4 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm text-warning">
+      <main
+        id="admin-main-content"
+        class="flex-1 overflow-auto"
+        :class="isWorkspaceSelectionPage ? '' : 'p-3 sm:p-6'"
+        tabindex="-1"
+      >
+        <div
+          v-if="!isWorkspaceSelectionPage && noticeKey"
+          class="mb-4 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm text-warning"
+        >
           {{ t(noticeKey) }}
         </div>
         <router-view v-slot="{ Component }">
@@ -426,14 +404,4 @@ watch(
   transform: translateY(10px);
 }
 
-.dropdown-enter-active,
-.dropdown-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-
-.dropdown-enter-from,
-.dropdown-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
-}
 </style>

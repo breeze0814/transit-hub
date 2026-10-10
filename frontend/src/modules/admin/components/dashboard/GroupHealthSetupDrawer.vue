@@ -86,11 +86,8 @@ const writePendingLegacyPolicies = (pending: Record<string, PendingLegacyPolicy>
   }
 }
 
-const legacyPolicyScope = (group: AdminGroupHealth): string => [
-  group.platform,
-  group.id,
-  group.accounts[0]?.targetId ?? '',
-].join('|')
+const legacyPolicyScope = (group: AdminGroupHealth): string =>
+  [group.platform, group.id, group.accounts[0]?.targetId ?? ''].join('|')
 
 const pendingLegacyPolicy = (group: AdminGroupHealth): PendingLegacyPolicy | undefined => {
   const pending = readPendingLegacyPolicies()[legacyPolicyScope(group)]
@@ -124,14 +121,15 @@ const dedupeModels = (value: string): string[] => {
   return result
 }
 
-const accountModels = (account: AdminGroupAccount): string[] => dedupeModels([
-  account.models ?? '',
-  ...(account.modelHealth ?? []).map((model) => model.modelName),
-].join(','))
+const accountModels = (account: AdminGroupAccount): string[] =>
+  dedupeModels([account.models ?? '', ...(account.modelHealth ?? []).map((model) => model.modelName)].join(','))
 
 // 分组向导只使用主列表已经返回的账号模型字段，不额外请求上游。优先取所有已选目标的模型
 // 交集并限制为 3 个；无法确认完整交集时回退到少量已发现模型，避免默认创建过多探活目标。
-const suggestedModels = (group: AdminGroupHealth, targetIds: Set<string>): { models: string[]; source: ModelSuggestionSource } => {
+const suggestedModels = (
+  group: AdminGroupHealth,
+  targetIds: Set<string>,
+): { models: string[]; source: ModelSuggestionSource } => {
   const accounts = group.accounts.filter((account) => targetIds.has(account.targetId))
   const inventories = accounts.map(accountModels)
   const allHaveInventory = accounts.length > 0 && inventories.every((models) => models.length > 0)
@@ -179,7 +177,9 @@ const reset = async () => {
   const configuration = outcome.configuration
   selectedPolicyIds.value = new Set(configuration.policyIds)
   const excluded = new Set(configuration.excludedTargetIds)
-  selectedTargetIds.value = new Set(group.accounts.filter((account) => !excluded.has(account.targetId)).map((account) => account.targetId))
+  selectedTargetIds.value = new Set(
+    group.accounts.filter((account) => !excluded.has(account.targetId)).map((account) => account.targetId),
+  )
   if (configuration.policyIds.length > 0) {
     mode.value = 'existing'
   }
@@ -206,8 +206,12 @@ const readableMessage = (rawKey: string): string => t(connectionHealthMessageKey
 const effectivePriorityMode = computed<ConnectionHealthPriorityMode>(() =>
   mode.value === 'multiplier' || mode.value === 'multiplierOnly' ? 'multiplier' : 'none',
 )
-const selectedExistingPolicies = computed(() => props.policies.filter((policy) => selectedPolicyIds.value.has(policy.id)))
-const hasGroupMultiplier = computed(() => typeof props.group?.multiplier === 'number' && Number.isFinite(props.group.multiplier))
+const selectedExistingPolicies = computed(() =>
+  props.policies.filter((policy) => selectedPolicyIds.value.has(policy.id)),
+)
+const hasGroupMultiplier = computed(
+  () => typeof props.group?.multiplier === 'number' && Number.isFinite(props.group.multiplier),
+)
 const requiresGroupMultiplier = computed(() => {
   if (mode.value === 'multiplier' || mode.value === 'multiplierOnly') return true
   if (mode.value !== 'existing') return false
@@ -254,7 +258,9 @@ const previous = () => {
 const createQuickPolicyInput = (): PolicyInput => {
   const multiplierOnly = mode.value === 'multiplierOnly'
   return {
-    name: t(`${prefix}.generatedPolicyName`, { group: props.group?.name ?? '' }),
+    name: t(`${prefix}.generatedPolicyName`, {
+      group: props.group?.name ?? '',
+    }),
     enabled: true,
     ownGroupId: '',
     ownGroupName: '',
@@ -317,7 +323,11 @@ const bindLegacyQuickPolicy = async (
     policyIds: [policyId],
     excludedTargetIds,
   })
-  if ('errorKey' in fallback && fallback.errorKey === 'admin.connectionHealth.errors.policyNotFound' && reusedPendingPolicy) {
+  if (
+    'errorKey' in fallback &&
+    fallback.errorKey === 'admin.connectionHealth.errors.policyNotFound' &&
+    reusedPendingPolicy
+  ) {
     // 缓存策略可能已被用户从其它页面删除。只在确认 policy 不存在时重建一次，
     // 网络或上游错误绝不触发新建，避免把瞬时失败放大为重复策略。
     clearPendingLegacyPolicy(group)
@@ -399,269 +409,396 @@ const close = () => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
+  <UiDrawer
+    v-if="open && group"
+    :show="Boolean(open && group)"
+    :z-index="150"
+    @mask-click="close"
+    @esc="close"
+    width="42rem"
+  >
+    <aside
+      role="dialog"
+      aria-modal="true"
+      :aria-label="t(`${prefix}.title`)"
+      class="h-full flex w-full flex-col border-l border-border/60 bg-card"
     >
-      <div v-if="open && group" class="fixed inset-0 z-[150]">
-        <div class="absolute inset-0 bg-background/65 backdrop-blur-sm" @click="close" />
-        <aside
-          role="dialog"
-          aria-modal="true"
-          :aria-label="t(`${prefix}.title`)"
-          class="absolute bottom-0 right-0 top-0 flex w-full max-w-2xl flex-col border-l border-border/60 bg-card shadow-2xl"
-        >
-          <header class="flex shrink-0 items-start justify-between gap-4 border-b border-border/60 px-6 py-5">
-            <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <Radar class="h-4 w-4 text-primary" />
-                <h2 class="truncate text-base font-semibold text-foreground">{{ t(`${prefix}.title`) }}</h2>
-              </div>
-              <p class="mt-1 truncate text-sm text-muted-foreground">{{ group.name }} · {{ group.platform || '-' }}</p>
-            </div>
-            <button type="button" class="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-surface hover:text-foreground" @click="close">
-              <X class="h-4 w-4" />
-            </button>
-          </header>
-
-          <div class="shrink-0 border-b border-border/50 px-6 py-4">
-            <ol class="grid grid-cols-3 gap-2" :aria-label="t(`${prefix}.stepsLabel`)">
-              <li v-for="index in 3" :key="index" class="flex items-center gap-2">
-                <span
-                  class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
-                  :class="step >= index ? 'bg-primary text-primary-foreground' : 'bg-surface text-muted-foreground'"
-                >
-                  <Check v-if="step > index" class="h-3.5 w-3.5" />
-                  <span v-else>{{ index }}</span>
-                </span>
-                <span class="truncate text-xs" :class="step === index ? 'font-medium text-foreground' : 'text-muted-foreground'">
-                  {{ t(`${prefix}.steps.${index}`) }}
-                </span>
-              </li>
-            </ol>
+      <header class="flex shrink-0 items-start justify-between gap-4 border-b border-border/60 px-6 py-5">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <Radar class="h-4 w-4 text-primary" />
+            <h2 class="truncate text-base font-semibold text-foreground">
+              {{ t(`${prefix}.title`) }}
+            </h2>
           </div>
+          <p class="mt-1 truncate text-sm text-muted-foreground">{{ group.name }} · {{ group.platform || '-' }}</p>
+        </div>
+        <UiButton
+          attr-type="button"
+          class="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
+          @click="close"
+        >
+          <X class="h-4 w-4" />
+        </UiButton>
+      </header>
 
-          <div class="flex-1 overflow-y-auto px-6 py-5">
-            <div v-if="phase === 'loading'" class="flex min-h-80 items-center justify-center">
-              <Loader2 class="h-6 w-6 animate-spin text-primary" />
+      <div class="shrink-0 border-b border-border/50 px-6 py-4">
+        <ol class="grid grid-cols-3 gap-2" :aria-label="t(`${prefix}.stepsLabel`)">
+          <li v-for="index in 3" :key="index" class="flex items-center gap-2">
+            <span
+              class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+              :class="step >= index ? 'bg-primary text-primary-foreground' : 'bg-surface text-muted-foreground'"
+            >
+              <Check v-if="step > index" class="h-3.5 w-3.5" />
+              <span v-else>{{ index }}</span>
+            </span>
+            <span
+              class="truncate text-xs"
+              :class="step === index ? 'font-medium text-foreground' : 'text-muted-foreground'"
+            >
+              {{ t(`${prefix}.steps.${index}`) }}
+            </span>
+          </li>
+        </ol>
+      </div>
+
+      <div class="flex-1 overflow-y-auto px-6 py-5">
+        <div v-if="phase === 'loading'" class="flex min-h-80 items-center justify-center">
+          <Loader2 class="h-6 w-6 animate-spin text-primary" />
+        </div>
+
+        <div v-else-if="phase === 'error'" class="flex min-h-80 flex-col items-center justify-center gap-4 text-center">
+          <p class="max-w-md text-sm text-destructive">
+            {{ readableMessage(errorKey) }}
+          </p>
+          <UiButton
+            attr-type="button"
+            class="inline-flex h-9 items-center rounded-lg border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-surface"
+            @click="reset"
+          >
+            {{ t(`${prefix}.retry`) }}
+          </UiButton>
+        </div>
+
+        <template v-else>
+          <section v-if="step === 1" class="space-y-4">
+            <div>
+              <h3 class="text-sm font-semibold text-foreground">
+                {{ t(`${prefix}.scope.title`) }}
+              </h3>
+              <p class="mt-1 text-sm leading-6 text-muted-foreground">
+                {{ t(`${prefix}.scope.description`) }}
+              </p>
+            </div>
+            <div class="divide-y divide-border/50 rounded-lg border border-border/60">
+              <div
+                v-for="account in group.accounts"
+                :key="account.targetId"
+                class="flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-surface/60"
+              >
+                <UiChoice
+                  type="checkbox"
+                  class="mt-0.5 h-4 w-4 rounded border-border"
+                  :checked="selectedTargetIds.has(account.targetId)"
+                  @change="toggleTarget(account.targetId)"
+                >
+                  <span class="min-w-0 flex-1">
+                    <span class="flex flex-wrap items-center gap-2">
+                      <span class="truncate text-sm font-medium text-foreground">{{ account.name || account.id }}</span>
+                      <span class="text-xs text-muted-foreground">{{ account.status || '-' }}</span>
+                    </span>
+                    <span class="mt-1 block truncate text-xs text-muted-foreground">{{
+                      account.models || t(`${prefix}.scope.modelsUnknown`)
+                    }}</span>
+                  </span>
+                  <span
+                    class="shrink-0 text-xs"
+                    :class="
+                      account.probeAvailable
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-amber-600 dark:text-amber-400'
+                    "
+                  >
+                    {{ t(`${prefix}.scope.${account.probeAvailable ? 'probeable' : 'pending'}`) }}
+                  </span>
+                </UiChoice>
+              </div>
+            </div>
+            <p class="text-xs text-muted-foreground">
+              {{ t(`${prefix}.scope.futureHint`) }}
+            </p>
+          </section>
+
+          <section v-else-if="step === 2" class="space-y-5">
+            <div>
+              <h3 class="text-sm font-semibold text-foreground">
+                {{ t(`${prefix}.strategy.title`) }}
+              </h3>
+              <p class="mt-1 text-sm leading-6 text-muted-foreground">
+                {{ t(`${prefix}.strategy.description`) }}
+              </p>
+            </div>
+            <NRadioGroup :value="mode" @update:value="mode = $event" size="small" class="ui-radio-cards">
+              <NRadio
+                v-for="option in ['multiplier', 'multiplierOnly', 'stable', 'monitor'] as const"
+                :key="option"
+                :value="option"
+              >
+                <span class="flex min-w-0 items-start gap-2"
+                  ><Radar v-if="option === 'multiplier'" class="mt-0.5 h-4 w-4 shrink-0 text-primary" /><ArrowDownUp
+                    v-else-if="option === 'multiplierOnly'"
+                    class="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                  /><ShieldCheck v-else-if="option === 'stable'" class="mt-0.5 h-4 w-4 shrink-0 text-primary" /><Gauge
+                    v-else
+                    class="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                  /><span>
+                    <span class="block text-sm font-medium text-foreground">{{
+                      t(`${prefix}.strategy.options.${option}.title`)
+                    }}</span>
+                    <span class="mt-1 block text-xs leading-5 text-muted-foreground">{{
+                      t(`${prefix}.strategy.options.${option}.description`)
+                    }}</span>
+                  </span></span
+                >
+              </NRadio>
+              <NRadio v-if="policies.length > 0" :value="'existing'">
+                <span class="flex min-w-0 items-start gap-2"
+                  ><SlidersHorizontal class="mt-0.5 h-4 w-4 shrink-0 text-primary" /><span>
+                    <span class="block text-sm font-medium text-foreground">{{
+                      t(`${prefix}.strategy.options.existing.title`)
+                    }}</span>
+                    <span class="mt-1 block text-xs leading-5 text-muted-foreground">{{
+                      t(`${prefix}.strategy.options.existing.description`)
+                    }}</span>
+                  </span></span
+                >
+              </NRadio>
+            </NRadioGroup>
+
+            <div v-if="multiplierMissing" class="rounded-lg border border-amber-500/30 bg-amber-500/[0.06] px-4 py-3">
+              <p class="text-sm font-medium text-amber-700 dark:text-amber-400">
+                {{ t(`${prefix}.strategy.multiplierMissingTitle`) }}
+              </p>
+              <p class="mt-1 text-xs leading-5 text-muted-foreground">
+                {{ t(`${prefix}.strategy.multiplierMissingHelp`) }}
+              </p>
             </div>
 
-            <div v-else-if="phase === 'error'" class="flex min-h-80 flex-col items-center justify-center gap-4 text-center">
-              <p class="max-w-md text-sm text-destructive">{{ readableMessage(errorKey) }}</p>
-              <button
-                type="button"
-                class="inline-flex h-9 items-center rounded-lg border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-surface"
-                @click="reset"
+            <div v-if="mode === 'existing'" class="space-y-2 rounded-lg border border-border/60 p-3">
+              <div
+                v-for="policy in policies"
+                :key="policy.id"
+                class="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 hover:bg-surface/60"
               >
-                {{ t(`${prefix}.retry`) }}
-              </button>
+                <UiChoice
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-border"
+                  :checked="selectedPolicyIds.has(policy.id)"
+                  @change="togglePolicy(policy.id)"
+                >
+                  <span class="min-w-0 flex-1 truncate text-sm text-foreground">{{ policy.name }}</span>
+                  <span class="text-xs text-muted-foreground">{{
+                    t(`admin.connectionHealth.policies.${policy.enabled ? 'enabled' : 'disabled'}`)
+                  }}</span>
+                </UiChoice>
+              </div>
+            </div>
+
+            <div
+              v-else-if="mode === 'multiplierOnly'"
+              class="rounded-lg border border-primary/25 bg-primary/[0.05] px-4 py-3"
+            >
+              <div class="flex items-center gap-2 text-sm font-medium text-foreground">
+                <ArrowDownUp class="h-4 w-4 text-primary" />
+                {{ t(`${prefix}.strategy.multiplierOnlyTitle`) }}
+              </div>
+              <p class="mt-1 text-xs leading-5 text-muted-foreground">
+                {{ t(`${prefix}.strategy.multiplierOnlyHelp`) }}
+              </p>
             </div>
 
             <template v-else>
-              <section v-if="step === 1" class="space-y-4">
-                <div>
-                  <h3 class="text-sm font-semibold text-foreground">{{ t(`${prefix}.scope.title`) }}</h3>
-                  <p class="mt-1 text-sm leading-6 text-muted-foreground">{{ t(`${prefix}.scope.description`) }}</p>
-                </div>
-                <div class="divide-y divide-border/50 rounded-lg border border-border/60">
-                  <label
-                    v-for="account in group.accounts"
-                    :key="account.targetId"
-                    class="flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-surface/60"
+              <div class="space-y-2">
+                <label class="text-xs font-medium text-muted-foreground">{{
+                  t(`${prefix}.strategy.modelsLabel`)
+                }}</label>
+                <UiInput
+                  type="textarea"
+                  v-model="modelText"
+                  rows="5"
+                  :placeholder="t(`${prefix}.strategy.modelsPlaceholder`)"
+                  class="w-full resize-y rounded-lg border border-border/60 bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
+                  @input="modelsTouched = true"
+                />
+                <p class="text-xs text-muted-foreground">
+                  {{
+                    t(`${prefix}.strategy.modelsDetected`, {
+                      count: models.length,
+                    })
+                  }}
+                </p>
+                <p v-if="modelSuggestionSource !== 'none' && !modelsTouched" class="text-xs leading-5 text-primary">
+                  {{ t(`${prefix}.strategy.modelSuggestions.${modelSuggestionSource}`, { count: models.length }) }}
+                </p>
+              </div>
+              <div class="grid gap-3 sm:grid-cols-2">
+                <label class="space-y-1.5">
+                  <span class="text-xs font-medium text-muted-foreground">{{
+                    t(`${prefix}.strategy.providerLabel`)
+                  }}</span>
+                  <UiSelect
+                    v-model="providerFamily"
+                    class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground"
                   >
-                    <input
-                      type="checkbox"
-                      class="mt-0.5 h-4 w-4 rounded border-border"
-                      :checked="selectedTargetIds.has(account.targetId)"
-                      @change="toggleTarget(account.targetId)"
-                    >
-                    <span class="min-w-0 flex-1">
-                      <span class="flex flex-wrap items-center gap-2">
-                        <span class="truncate text-sm font-medium text-foreground">{{ account.name || account.id }}</span>
-                        <span class="text-xs text-muted-foreground">{{ account.status || '-' }}</span>
-                      </span>
-                      <span class="mt-1 block truncate text-xs text-muted-foreground">{{ account.models || t(`${prefix}.scope.modelsUnknown`) }}</span>
-                    </span>
-                    <span class="shrink-0 text-xs" :class="account.probeAvailable ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'">
-                      {{ t(`${prefix}.scope.${account.probeAvailable ? 'probeable' : 'pending'}`) }}
-                    </span>
-                  </label>
-                </div>
-                <p class="text-xs text-muted-foreground">{{ t(`${prefix}.scope.futureHint`) }}</p>
-              </section>
-
-              <section v-else-if="step === 2" class="space-y-5">
-                <div>
-                  <h3 class="text-sm font-semibold text-foreground">{{ t(`${prefix}.strategy.title`) }}</h3>
-                  <p class="mt-1 text-sm leading-6 text-muted-foreground">{{ t(`${prefix}.strategy.description`) }}</p>
-                </div>
-                <div class="grid gap-2 sm:grid-cols-2">
-                  <button
-                    v-for="option in (['multiplier', 'multiplierOnly', 'stable', 'monitor'] as const)"
-                    :key="option"
-                    type="button"
-                    class="flex min-h-24 items-start gap-3 rounded-lg border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    :class="mode === option ? 'border-primary bg-primary/[0.06]' : 'border-border/60 hover:bg-surface/60'"
-                    @click="mode = option"
+                    <UiOption v-for="provider in providerOptions" :key="provider" :value="provider">{{
+                      t(`admin.connectionHealth.providerLabels.${provider}`)
+                    }}</UiOption>
+                  </UiSelect>
+                </label>
+                <div class="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2">
+                  <UiChoice
+                    v-model="autoRemoteActionEnabled"
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-border"
+                    :disabled="mode === 'monitor'"
                   >
-                    <Radar v-if="option === 'multiplier'" class="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    <ArrowDownUp v-else-if="option === 'multiplierOnly'" class="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    <ShieldCheck v-else-if="option === 'stable'" class="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    <Gauge v-else class="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                     <span>
-                      <span class="block text-sm font-medium text-foreground">{{ t(`${prefix}.strategy.options.${option}.title`) }}</span>
-                      <span class="mt-1 block text-xs leading-5 text-muted-foreground">{{ t(`${prefix}.strategy.options.${option}.description`) }}</span>
+                      <span class="block text-xs font-medium text-foreground">{{
+                        t(`${prefix}.strategy.remoteActionLabel`)
+                      }}</span>
+                      <span class="mt-0.5 block text-xs text-muted-foreground">{{
+                        t(`${prefix}.strategy.remoteActionHelp`)
+                      }}</span>
                     </span>
-                  </button>
-                  <button
-                    v-if="policies.length > 0"
-                    type="button"
-                    class="flex min-h-24 items-start gap-3 rounded-lg border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    :class="mode === 'existing' ? 'border-primary bg-primary/[0.06]' : 'border-border/60 hover:bg-surface/60'"
-                    @click="mode = 'existing'"
-                  >
-                    <SlidersHorizontal class="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    <span>
-                      <span class="block text-sm font-medium text-foreground">{{ t(`${prefix}.strategy.options.existing.title`) }}</span>
-                      <span class="mt-1 block text-xs leading-5 text-muted-foreground">{{ t(`${prefix}.strategy.options.existing.description`) }}</span>
-                    </span>
-                  </button>
+                  </UiChoice>
                 </div>
-
-                <div v-if="multiplierMissing" class="rounded-lg border border-amber-500/30 bg-amber-500/[0.06] px-4 py-3">
-                  <p class="text-sm font-medium text-amber-700 dark:text-amber-400">{{ t(`${prefix}.strategy.multiplierMissingTitle`) }}</p>
-                  <p class="mt-1 text-xs leading-5 text-muted-foreground">{{ t(`${prefix}.strategy.multiplierMissingHelp`) }}</p>
-                </div>
-
-                <div v-if="mode === 'existing'" class="space-y-2 rounded-lg border border-border/60 p-3">
-                  <label v-for="policy in policies" :key="policy.id" class="flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 hover:bg-surface/60">
-                    <input type="checkbox" class="h-4 w-4 rounded border-border" :checked="selectedPolicyIds.has(policy.id)" @change="togglePolicy(policy.id)">
-                    <span class="min-w-0 flex-1 truncate text-sm text-foreground">{{ policy.name }}</span>
-                    <span class="text-xs text-muted-foreground">{{ t(`admin.connectionHealth.policies.${policy.enabled ? 'enabled' : 'disabled'}`) }}</span>
-                  </label>
-                </div>
-
-                <div v-else-if="mode === 'multiplierOnly'" class="rounded-lg border border-primary/25 bg-primary/[0.05] px-4 py-3">
-                  <div class="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <ArrowDownUp class="h-4 w-4 text-primary" />
-                    {{ t(`${prefix}.strategy.multiplierOnlyTitle`) }}
-                  </div>
-                  <p class="mt-1 text-xs leading-5 text-muted-foreground">{{ t(`${prefix}.strategy.multiplierOnlyHelp`) }}</p>
-                </div>
-
-                <template v-else>
-                  <div class="space-y-2">
-                    <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.strategy.modelsLabel`) }}</label>
-                    <textarea
-                      v-model="modelText"
-                      rows="5"
-                      :placeholder="t(`${prefix}.strategy.modelsPlaceholder`)"
-                      class="w-full resize-y rounded-lg border border-border/60 bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
-                      @input="modelsTouched = true"
-                    />
-                    <p class="text-xs text-muted-foreground">{{ t(`${prefix}.strategy.modelsDetected`, { count: models.length }) }}</p>
-                    <p v-if="modelSuggestionSource !== 'none' && !modelsTouched" class="text-xs leading-5 text-primary">
-                      {{ t(`${prefix}.strategy.modelSuggestions.${modelSuggestionSource}`, { count: models.length }) }}
-                    </p>
-                  </div>
-                  <div class="grid gap-3 sm:grid-cols-2">
-                    <label class="space-y-1.5">
-                      <span class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.strategy.providerLabel`) }}</span>
-                      <select v-model="providerFamily" class="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground">
-                        <option v-for="provider in providerOptions" :key="provider" :value="provider">{{ t(`admin.connectionHealth.providerLabels.${provider}`) }}</option>
-                      </select>
-                    </label>
-                    <label class="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2">
-                      <span>
-                        <span class="block text-xs font-medium text-foreground">{{ t(`${prefix}.strategy.remoteActionLabel`) }}</span>
-                        <span class="mt-0.5 block text-xs text-muted-foreground">{{ t(`${prefix}.strategy.remoteActionHelp`) }}</span>
-                      </span>
-                      <input v-model="autoRemoteActionEnabled" type="checkbox" class="h-4 w-4 rounded border-border" :disabled="mode === 'monitor'">
-                    </label>
-                  </div>
-                </template>
-              </section>
-
-              <section v-else class="space-y-5">
-                <div>
-                  <h3 class="text-sm font-semibold text-foreground">{{ t(`${prefix}.confirm.title`) }}</h3>
-                  <p class="mt-1 text-sm leading-6 text-muted-foreground">{{ t(`${prefix}.confirm.description`) }}</p>
-                </div>
-                <dl class="divide-y divide-border/50 rounded-lg border border-border/60">
-                  <div class="flex items-center justify-between gap-4 px-4 py-3">
-                    <dt class="text-sm text-muted-foreground">{{ t(`${prefix}.confirm.scope`) }}</dt>
-                    <dd class="text-right text-sm font-medium text-foreground">{{ t(`${prefix}.confirm.scopeValue`, { selected: selectedCount, excluded: excludedCount }) }}</dd>
-                  </div>
-                  <div class="flex items-center justify-between gap-4 px-4 py-3">
-                    <dt class="text-sm text-muted-foreground">{{ t(`${prefix}.confirm.strategy`) }}</dt>
-                    <dd class="text-right text-sm font-medium text-foreground">
-                      {{ mode === 'existing' ? selectedExistingPolicies.map((policy) => policy.name).join(', ') : t(`${prefix}.strategy.options.${mode}.title`) }}
-                    </dd>
-                  </div>
-                  <div class="flex items-center justify-between gap-4 px-4 py-3">
-                    <dt class="text-sm text-muted-foreground">{{ t(`${prefix}.confirm.models`) }}</dt>
-                    <dd class="text-right text-sm font-medium text-foreground">
-                      {{ mode === 'existing' ? t(`${prefix}.confirm.fromPolicy`) : mode === 'multiplierOnly' ? t(`${prefix}.confirm.notApplicable`) : models.length }}
-                    </dd>
-                  </div>
-                  <div class="flex items-center justify-between gap-4 px-4 py-3">
-                    <dt class="text-sm text-muted-foreground">{{ t(`${prefix}.confirm.remoteAction`) }}</dt>
-                    <dd class="text-right text-sm font-medium" :class="autoRemoteActionEnabled && mode !== 'existing' && mode !== 'multiplierOnly' ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'">
-                      {{ mode === 'existing' ? t(`${prefix}.confirm.fromPolicy`) : t(`${prefix}.confirm.${autoRemoteActionEnabled && mode !== 'multiplierOnly' ? 'enabled' : 'disabled'}`) }}
-                    </dd>
-                  </div>
-                </dl>
-                <div v-if="mode === 'multiplier'" class="rounded-lg border border-primary/25 bg-primary/[0.05] px-4 py-3 text-xs leading-5 text-muted-foreground">
-                  {{ t(`${prefix}.confirm.multiplierRule`) }}
-                </div>
-                <div v-else-if="mode === 'multiplierOnly'" class="rounded-lg border border-primary/25 bg-primary/[0.05] px-4 py-3 text-xs leading-5 text-muted-foreground">
-                  {{ t(`${prefix}.confirm.multiplierOnlyRule`) }}
-                </div>
-              </section>
-
-              <p v-if="errorKey" class="mt-5 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{{ readableMessage(errorKey) }}</p>
+              </div>
             </template>
-          </div>
+          </section>
 
-          <footer class="flex shrink-0 items-center justify-between gap-3 border-t border-border/60 px-6 py-4">
-            <button
-              type="button"
-              class="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface disabled:opacity-40"
-              :disabled="step === 1 || phase !== 'ready'"
-              @click="previous"
+          <section v-else class="space-y-5">
+            <div>
+              <h3 class="text-sm font-semibold text-foreground">
+                {{ t(`${prefix}.confirm.title`) }}
+              </h3>
+              <p class="mt-1 text-sm leading-6 text-muted-foreground">
+                {{ t(`${prefix}.confirm.description`) }}
+              </p>
+            </div>
+            <dl class="divide-y divide-border/50 rounded-lg border border-border/60">
+              <div class="flex items-center justify-between gap-4 px-4 py-3">
+                <dt class="text-sm text-muted-foreground">
+                  {{ t(`${prefix}.confirm.scope`) }}
+                </dt>
+                <dd class="text-right text-sm font-medium text-foreground">
+                  {{
+                    t(`${prefix}.confirm.scopeValue`, {
+                      selected: selectedCount,
+                      excluded: excludedCount,
+                    })
+                  }}
+                </dd>
+              </div>
+              <div class="flex items-center justify-between gap-4 px-4 py-3">
+                <dt class="text-sm text-muted-foreground">
+                  {{ t(`${prefix}.confirm.strategy`) }}
+                </dt>
+                <dd class="text-right text-sm font-medium text-foreground">
+                  {{
+                    mode === 'existing'
+                      ? selectedExistingPolicies.map((policy) => policy.name).join(', ')
+                      : t(`${prefix}.strategy.options.${mode}.title`)
+                  }}
+                </dd>
+              </div>
+              <div class="flex items-center justify-between gap-4 px-4 py-3">
+                <dt class="text-sm text-muted-foreground">
+                  {{ t(`${prefix}.confirm.models`) }}
+                </dt>
+                <dd class="text-right text-sm font-medium text-foreground">
+                  {{
+                    mode === 'existing'
+                      ? t(`${prefix}.confirm.fromPolicy`)
+                      : mode === 'multiplierOnly'
+                        ? t(`${prefix}.confirm.notApplicable`)
+                        : models.length
+                  }}
+                </dd>
+              </div>
+              <div class="flex items-center justify-between gap-4 px-4 py-3">
+                <dt class="text-sm text-muted-foreground">
+                  {{ t(`${prefix}.confirm.remoteAction`) }}
+                </dt>
+                <dd
+                  class="text-right text-sm font-medium"
+                  :class="
+                    autoRemoteActionEnabled && mode !== 'existing' && mode !== 'multiplierOnly'
+                      ? 'text-amber-600 dark:text-amber-400'
+                      : 'text-foreground'
+                  "
+                >
+                  {{
+                    mode === 'existing'
+                      ? t(`${prefix}.confirm.fromPolicy`)
+                      : t(
+                          `${prefix}.confirm.${autoRemoteActionEnabled && mode !== 'multiplierOnly' ? 'enabled' : 'disabled'}`,
+                        )
+                  }}
+                </dd>
+              </div>
+            </dl>
+            <div
+              v-if="mode === 'multiplier'"
+              class="rounded-lg border border-primary/25 bg-primary/[0.05] px-4 py-3 text-xs leading-5 text-muted-foreground"
             >
-              <ChevronLeft class="h-4 w-4" />
-              {{ t(`${prefix}.back`) }}
-            </button>
-            <button
-              v-if="step < 3"
-              type="button"
-              class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
-              :disabled="!canContinue"
-              @click="next"
+              {{ t(`${prefix}.confirm.multiplierRule`) }}
+            </div>
+            <div
+              v-else-if="mode === 'multiplierOnly'"
+              class="rounded-lg border border-primary/25 bg-primary/[0.05] px-4 py-3 text-xs leading-5 text-muted-foreground"
             >
-              {{ t(`${prefix}.next`) }}
-              <ChevronRight class="h-4 w-4" />
-            </button>
-            <button
-              v-else
-              type="button"
-              class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
-              :disabled="phase === 'saving'"
-              @click="save"
-            >
-              <Loader2 v-if="phase === 'saving'" class="h-4 w-4 animate-spin" />
-              <ShieldCheck v-else class="h-4 w-4" />
-              {{ t(`${prefix}.save`) }}
-            </button>
-          </footer>
-        </aside>
+              {{ t(`${prefix}.confirm.multiplierOnlyRule`) }}
+            </div>
+          </section>
+
+          <p v-if="errorKey" class="mt-5 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {{ readableMessage(errorKey) }}
+          </p>
+        </template>
       </div>
-    </Transition>
-  </Teleport>
+
+      <footer class="flex shrink-0 items-center justify-between gap-3 border-t border-border/60 px-6 py-4">
+        <UiButton
+          attr-type="button"
+          class="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface disabled:opacity-40"
+          :disabled="step === 1 || phase !== 'ready'"
+          @click="previous"
+        >
+          <ChevronLeft class="h-4 w-4" />
+          {{ t(`${prefix}.back`) }}
+        </UiButton>
+        <UiButton
+          v-if="step < 3"
+          attr-type="button"
+          class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
+          :disabled="!canContinue"
+          @click="next"
+        >
+          {{ t(`${prefix}.next`) }}
+          <ChevronRight class="h-4 w-4" />
+        </UiButton>
+        <UiButton
+          v-else
+          attr-type="button"
+          class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
+          :disabled="phase === 'saving'"
+          @click="save"
+        >
+          <Loader2 v-if="phase === 'saving'" class="h-4 w-4 animate-spin" />
+          <ShieldCheck v-else class="h-4 w-4" />
+          {{ t(`${prefix}.save`) }}
+        </UiButton>
+      </footer>
+    </aside>
+  </UiDrawer>
 </template>

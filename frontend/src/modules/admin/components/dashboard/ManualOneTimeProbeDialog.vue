@@ -133,151 +133,157 @@ const close = () => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
+  <UiModal v-if="open && target" :show="Boolean(open && target)" :z-index="150" @mask-click="close" @esc="close">
+    <div
+      role="dialog"
+      aria-modal="true"
+      :aria-label="t(`${prefix}.title`)"
+      class="relative flex h-[min(760px,calc(100dvh-2rem))] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl"
     >
-      <div v-if="open && target" class="fixed inset-0 z-[150] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-background/60 backdrop-blur-sm" @click="close" />
-
-      <div role="dialog" aria-modal="true" :aria-label="t(`${prefix}.title`)" class="relative flex h-[min(760px,calc(100dvh-2rem))] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl">
-          <!-- 头部：账号/channel 摘要 -->
-          <div class="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-5 py-4">
-            <div class="flex min-w-0 items-center gap-2.5">
-              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Zap class="h-4 w-4" />
-              </div>
-              <div class="min-w-0">
-                <h3 class="truncate text-sm font-semibold text-foreground">{{ t(`${prefix}.title`) }}</h3>
-                <p class="truncate text-xs text-muted-foreground">
-                  {{ target.accountName }} · {{ target.platform || '-' }} · {{ target.type || '-' }} · {{ target.status || '-' }} · {{ target.groupName }}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              class="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
-              @click="close"
-            >
-              <X class="h-4 w-4" />
-            </button>
+      <!-- 头部：账号/channel 摘要 -->
+      <div class="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-5 py-4">
+        <div class="flex min-w-0 items-center gap-2.5">
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Zap class="h-4 w-4" />
           </div>
-
-          <!-- 内容区：模型选择 + 结果展示，内部独立滚动 -->
-          <div class="flex-1 overflow-y-auto px-5 py-4">
-            <div v-if="phase === 'loading'" class="flex flex-col items-center justify-center gap-2 py-16 text-center">
-              <Loader2 class="h-6 w-6 animate-spin text-primary/60" />
-              <p class="text-sm text-muted-foreground">{{ t(`${prefix}.loadingModels`) }}</p>
-            </div>
-
-            <div v-else-if="phase === 'error'" class="flex flex-col items-center justify-center gap-3 py-16 text-center">
-              <ShieldAlert class="h-8 w-8 text-red-500/70" />
-              <p class="text-sm text-red-600 dark:text-red-400">{{ readableMessage(loadErrorKey) }}</p>
-              <button
-                type="button"
-                class="rounded-lg border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-surface-line"
-                @click="retryLoad"
-              >
-                {{ t(`${prefix}.retryLoad`) }}
-              </button>
-            </div>
-
-            <template v-else>
-              <div v-if="!hasModels" class="flex flex-col items-center justify-center gap-2 py-16 text-center">
-                <ShieldAlert class="h-8 w-8 text-muted-foreground/40" />
-                <p class="text-sm text-muted-foreground">{{ t(`${prefix}.empty`) }}</p>
-              </div>
-
-              <template v-else>
-                <p class="mb-3 text-xs text-muted-foreground">{{ t(`${prefix}.selectHint`) }}</p>
-                <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  <label
-                    v-for="model in models"
-                    :key="model.id"
-                    class="flex cursor-pointer items-start gap-2 rounded-lg border border-border/40 px-3 py-2.5 transition-colors"
-                    :class="selected.has(model.id) ? 'border-primary/50 bg-primary/5' : 'hover:bg-surface-line/40'"
-                  >
-                    <input
-                      type="checkbox"
-                      class="mt-0.5 h-4 w-4 shrink-0 rounded border-border/60"
-                      :disabled="phase === 'testing'"
-                      :checked="selected.has(model.id)"
-                      @change="toggle(model.id)"
-                    />
-                    <div class="min-w-0 flex-1">
-                      <p class="truncate text-sm font-medium text-foreground">{{ model.name }}</p>
-                      <p v-if="model.ownedBy" class="truncate text-xs text-muted-foreground">{{ model.ownedBy }}</p>
-                    </div>
-                  </label>
-                </div>
-
-                <p v-if="testErrorKey" class="mt-4 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400">
-                  {{ readableMessage(testErrorKey) }}
-                </p>
-
-                <div class="mt-5">
-                  <h4 class="mb-2 text-xs font-semibold text-foreground">{{ t(`${prefix}.resultTitle`) }}</h4>
-                  <div v-if="results.length === 0" class="rounded-lg border border-dashed border-border/50 px-3 py-6 text-center text-xs text-muted-foreground">
-                    {{ t(`${prefix}.resultEmpty`) }}
-                  </div>
-                  <ul v-else class="space-y-2">
-                    <li
-                      v-for="result in results"
-                      :key="result.modelName"
-                      class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/40 px-3 py-2.5"
-                    >
-                      <div class="flex min-w-0 items-center gap-2">
-                        <CheckCircle2 v-if="result.healthy" class="h-4 w-4 shrink-0 text-green-500" />
-                        <XCircle v-else class="h-4 w-4 shrink-0 text-red-500" />
-                        <span class="truncate text-sm font-medium text-foreground">{{ result.modelName }}</span>
-                        <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs text-muted-foreground">
-                          <span class="h-1.5 w-1.5 rounded-full" :class="connectionHealthRecordColorClass(result.result)" />
-                          {{ resultLabel(result.result) }}
-                        </span>
-                      </div>
-                      <div class="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
-                        <span v-if="result.latencyMs !== null">{{ t(`${prefix}.latency`, { ms: result.latencyMs }) }}</span>
-                        <span>{{ formatConnectionHealthTime(result.probedAt) }}</span>
-                      </div>
-                      <p v-if="!result.healthy && result.errorDetail" class="w-full truncate text-xs text-red-500/80">
-                        {{ result.errorDetail }}
-                      </p>
-                    </li>
-                  </ul>
-                </div>
-              </template>
-            </template>
-          </div>
-
-          <!-- 底部操作栏 -->
-          <div class="flex shrink-0 items-center justify-between gap-3 border-t border-border/60 px-5 py-4">
-            <p v-if="hasModels" class="flex items-center gap-1 text-xs text-muted-foreground">
-              <AlertTriangle v-if="selected.size === 0" class="h-3.5 w-3.5" />
-              {{ t(`${prefix}.selectedCount`, { count: selected.size }) }}
+          <div class="min-w-0">
+            <h3 class="truncate text-sm font-semibold text-foreground">{{ t(`${prefix}.title`) }}</h3>
+            <p class="truncate text-xs text-muted-foreground">
+              {{ target.accountName }} · {{ target.platform || '-' }} · {{ target.type || '-' }} ·
+              {{ target.status || '-' }} · {{ target.groupName }}
             </p>
-            <div v-else />
-            <div class="flex items-center gap-2">
-              <button type="button" class="rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-surface-line" @click="close">
-                {{ t(`${prefix}.close`) }}
-              </button>
-              <button
-                type="button"
-                class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-                :disabled="!canStartTest"
-                @click="startTest"
-              >
-                <Loader2 v-if="phase === 'testing'" class="h-4 w-4 animate-spin" />
-                {{ phase === 'testing' ? t(`${prefix}.testing`) : t(`${prefix}.startTest`) }}
-              </button>
-            </div>
           </div>
         </div>
+        <UiButton
+          attr-type="button"
+          class="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
+          @click="close"
+        >
+          <X class="h-4 w-4" />
+        </UiButton>
       </div>
-    </Transition>
-  </Teleport>
+
+      <!-- 内容区：模型选择 + 结果展示，内部独立滚动 -->
+      <div class="flex-1 overflow-y-auto px-5 py-4">
+        <div v-if="phase === 'loading'" class="flex flex-col items-center justify-center gap-2 py-16 text-center">
+          <Loader2 class="h-6 w-6 animate-spin text-primary/60" />
+          <p class="text-sm text-muted-foreground">{{ t(`${prefix}.loadingModels`) }}</p>
+        </div>
+
+        <div v-else-if="phase === 'error'" class="flex flex-col items-center justify-center gap-3 py-16 text-center">
+          <ShieldAlert class="h-8 w-8 text-red-500/70" />
+          <p class="text-sm text-red-600 dark:text-red-400">{{ readableMessage(loadErrorKey) }}</p>
+          <UiButton
+            attr-type="button"
+            class="rounded-lg border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-surface-line"
+            @click="retryLoad"
+          >
+            {{ t(`${prefix}.retryLoad`) }}
+          </UiButton>
+        </div>
+
+        <template v-else>
+          <div v-if="!hasModels" class="flex flex-col items-center justify-center gap-2 py-16 text-center">
+            <ShieldAlert class="h-8 w-8 text-muted-foreground/40" />
+            <p class="text-sm text-muted-foreground">{{ t(`${prefix}.empty`) }}</p>
+          </div>
+
+          <template v-else>
+            <p class="mb-3 text-xs text-muted-foreground">{{ t(`${prefix}.selectHint`) }}</p>
+            <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div
+                v-for="model in models"
+                :key="model.id"
+                class="flex cursor-pointer items-start gap-2 rounded-lg border border-border/40 px-3 py-2.5 transition-colors"
+                :class="selected.has(model.id) ? 'border-primary/50 bg-primary/5' : 'hover:bg-surface-line/40'"
+              >
+                <UiChoice
+                  type="checkbox"
+                  class="mt-0.5 h-4 w-4 shrink-0 rounded border-border/60"
+                  :disabled="phase === 'testing'"
+                  :checked="selected.has(model.id)"
+                  @change="toggle(model.id)"
+                >
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-medium text-foreground">{{ model.name }}</p>
+                    <p v-if="model.ownedBy" class="truncate text-xs text-muted-foreground">{{ model.ownedBy }}</p>
+                  </div>
+                </UiChoice>
+              </div>
+            </div>
+
+            <p
+              v-if="testErrorKey"
+              class="mt-4 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400"
+            >
+              {{ readableMessage(testErrorKey) }}
+            </p>
+
+            <div class="mt-5">
+              <h4 class="mb-2 text-xs font-semibold text-foreground">{{ t(`${prefix}.resultTitle`) }}</h4>
+              <div
+                v-if="results.length === 0"
+                class="rounded-lg border border-dashed border-border/50 px-3 py-6 text-center text-xs text-muted-foreground"
+              >
+                {{ t(`${prefix}.resultEmpty`) }}
+              </div>
+              <ul v-else class="space-y-2">
+                <li
+                  v-for="result in results"
+                  :key="result.modelName"
+                  class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/40 px-3 py-2.5"
+                >
+                  <div class="flex min-w-0 items-center gap-2">
+                    <CheckCircle2 v-if="result.healthy" class="h-4 w-4 shrink-0 text-green-500" />
+                    <XCircle v-else class="h-4 w-4 shrink-0 text-red-500" />
+                    <span class="truncate text-sm font-medium text-foreground">{{ result.modelName }}</span>
+                    <span
+                      class="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs text-muted-foreground"
+                    >
+                      <span class="h-1.5 w-1.5 rounded-full" :class="connectionHealthRecordColorClass(result.result)" />
+                      {{ resultLabel(result.result) }}
+                    </span>
+                  </div>
+                  <div class="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
+                    <span v-if="result.latencyMs !== null">{{ t(`${prefix}.latency`, { ms: result.latencyMs }) }}</span>
+                    <span>{{ formatConnectionHealthTime(result.probedAt) }}</span>
+                  </div>
+                  <p v-if="!result.healthy && result.errorDetail" class="w-full truncate text-xs text-red-500/80">
+                    {{ result.errorDetail }}
+                  </p>
+                </li>
+              </ul>
+            </div>
+          </template>
+        </template>
+      </div>
+
+      <!-- 底部操作栏 -->
+      <div class="flex shrink-0 items-center justify-between gap-3 border-t border-border/60 px-5 py-4">
+        <p v-if="hasModels" class="flex items-center gap-1 text-xs text-muted-foreground">
+          <AlertTriangle v-if="selected.size === 0" class="h-3.5 w-3.5" />
+          {{ t(`${prefix}.selectedCount`, { count: selected.size }) }}
+        </p>
+        <div v-else />
+        <div class="flex items-center gap-2">
+          <UiButton
+            attr-type="button"
+            class="rounded-lg px-3 py-1.5 text-sm text-muted-foreground hover:bg-surface-line"
+            @click="close"
+          >
+            {{ t(`${prefix}.close`) }}
+          </UiButton>
+          <UiButton
+            attr-type="button"
+            class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="!canStartTest"
+            @click="startTest"
+          >
+            <Loader2 v-if="phase === 'testing'" class="h-4 w-4 animate-spin" />
+            {{ phase === 'testing' ? t(`${prefix}.testing`) : t(`${prefix}.startTest`) }}
+          </UiButton>
+        </div>
+      </div>
+    </div>
+  </UiModal>
 </template>

@@ -127,172 +127,177 @@ const statusBadgeClass = (status: string): string => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
+  <UiDrawer
+    v-if="open"
+    :show="Boolean(open)"
+    :z-index="150"
+    @mask-click="emit('close')"
+    @esc="emit('close')"
+    width="36rem"
+  >
+    <div
+      v-if="open"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="t(`${prefix}.title`)"
+      class="h-full w-full overflow-y-auto overscroll-contain border-l border-border/60 bg-card"
     >
-      <div v-if="open" class="fixed inset-0 z-[150]">
-        <div class="absolute inset-0 bg-background/60 backdrop-blur-sm" @click="emit('close')" />
-
-        <Transition
-          enter-active-class="transition duration-250 ease-out"
-          enter-from-class="translate-x-full"
-          enter-to-class="translate-x-0"
-          leave-active-class="transition duration-200 ease-in"
-          leave-from-class="translate-x-0"
-          leave-to-class="translate-x-full"
+      <div
+        class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border/60 bg-card/95 backdrop-blur px-5 py-4"
+      >
+        <div class="flex items-center gap-2.5">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <MessageSquare class="h-4 w-4" />
+          </div>
+          <h3 class="text-sm font-semibold text-foreground">{{ t(`${prefix}.title`) }}</h3>
+        </div>
+        <UiButton
+          attr-type="button"
+          class="rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
+          @click="emit('close')"
         >
-          <div
-            v-if="open"
-            role="dialog"
-            aria-modal="true"
-            :aria-label="t(`${prefix}.title`)"
-            class="absolute bottom-0 right-0 top-0 w-full max-w-xl overflow-y-auto overscroll-contain border-l border-border/60 bg-card shadow-2xl"
-          >
-            <div class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border/60 bg-card/95 backdrop-blur px-5 py-4">
-              <div class="flex items-center gap-2.5">
-                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <MessageSquare class="h-4 w-4" />
-                </div>
-                <h3 class="text-sm font-semibold text-foreground">{{ t(`${prefix}.title`) }}</h3>
+          <X class="h-4 w-4" />
+        </UiButton>
+      </div>
+
+      <div v-if="isLoading" class="flex items-center justify-center py-16">
+        <Loader2 class="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+
+      <div v-else-if="errorKey && !detail" class="px-5 py-5">
+        <div class="rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-600 dark:text-red-400">
+          {{ t(errorKey) }}
+        </div>
+      </div>
+
+      <div v-else-if="detail" class="space-y-5 px-5 py-5">
+        <div class="space-y-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {{ t(`${prefix}.sectionTicket`) }}
+          </p>
+          <div class="rounded-xl border border-border/40 bg-surface/30 p-4 space-y-3">
+            <div class="flex items-start justify-between gap-3">
+              <p class="text-sm font-semibold text-foreground">{{ detail.title }}</p>
+              <div class="flex shrink-0 items-center gap-2">
+                <span class="rounded-full px-2.5 py-1 text-xs font-medium" :class="statusBadgeClass(detail.status)">
+                  {{ t(`admin.tickets.status.${detail.status}`) }}
+                </span>
+                <UiSelect
+                  :value="detail.status"
+                  class="h-7 rounded-md border border-border/50 bg-surface px-1.5 text-xs text-foreground outline-none focus:border-primary"
+                  :disabled="isStatusUpdating"
+                  @change="handleStatusChange"
+                >
+                  <UiOption v-for="status in statusOptions" :key="status" :value="status">
+                    {{ t(`admin.tickets.status.${status}`) }}
+                  </UiOption>
+                </UiSelect>
               </div>
-              <button
-                type="button"
-                class="rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
-                @click="emit('close')"
-              >
-                <X class="h-4 w-4" />
-              </button>
             </div>
-
-            <div v-if="isLoading" class="flex items-center justify-center py-16">
-              <Loader2 class="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-
-            <div v-else-if="errorKey && !detail" class="px-5 py-5">
-              <div class="rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-600 dark:text-red-400">
-                {{ t(errorKey) }}
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <p class="text-muted-foreground">{{ t(`${prefix}.category`) }}</p>
+                <p class="mt-0.5 text-foreground">{{ detail.category }}</p>
               </div>
-            </div>
-
-            <div v-else-if="detail" class="space-y-5 px-5 py-5">
-              <div class="space-y-3">
-                <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t(`${prefix}.sectionTicket`) }}</p>
-                <div class="rounded-xl border border-border/40 bg-surface/30 p-4 space-y-3">
-                  <div class="flex items-start justify-between gap-3">
-                    <p class="text-sm font-semibold text-foreground">{{ detail.title }}</p>
-                    <div class="flex shrink-0 items-center gap-2">
-                      <span class="rounded-full px-2.5 py-1 text-xs font-medium" :class="statusBadgeClass(detail.status)">
-                        {{ t(`admin.tickets.status.${detail.status}`) }}
-                      </span>
-                      <select
-                        :value="detail.status"
-                        class="h-7 rounded-md border border-border/50 bg-surface px-1.5 text-xs text-foreground outline-none focus:border-primary"
-                        :disabled="isStatusUpdating"
-                        @change="handleStatusChange"
-                      >
-                        <option v-for="status in statusOptions" :key="status" :value="status">
-                          {{ t(`admin.tickets.status.${status}`) }}
-                        </option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="grid grid-cols-2 gap-3 text-xs">
-                    <div>
-                      <p class="text-muted-foreground">{{ t(`${prefix}.category`) }}</p>
-                      <p class="mt-0.5 text-foreground">{{ detail.category }}</p>
-                    </div>
-                    <div>
-                      <p class="text-muted-foreground">{{ t(`${prefix}.priority`) }}</p>
-                      <p class="mt-0.5 text-foreground">{{ detail.priority }}</p>
-                    </div>
-                    <div>
-                      <p class="text-muted-foreground">{{ t(`${prefix}.manualEmail`) }}</p>
-                      <p class="mt-0.5 text-foreground">{{ detail.manualEmail }}</p>
-                    </div>
-                    <div>
-                      <p class="text-muted-foreground">{{ t(`${prefix}.lastMessageAt`) }}</p>
-                      <p class="mt-0.5 text-foreground">{{ formatDateTime(detail.lastMessageAt) }}</p>
-                    </div>
-                    <div>
-                      <p class="text-muted-foreground">{{ t(`${prefix}.sub2apiUserId`) }}</p>
-                      <p class="mt-0.5 text-foreground">{{ detail.sub2apiUserId || t('admin.tickets.common.placeholder') }}</p>
-                    </div>
-                    <div>
-                      <p class="text-muted-foreground">{{ t(`${prefix}.sub2apiEmail`) }}</p>
-                      <p class="mt-0.5 text-foreground">{{ detail.sub2apiEmail || t('admin.tickets.common.placeholder') }}</p>
-                    </div>
-                    <div>
-                      <p class="text-muted-foreground">{{ t(`${prefix}.sub2apiRole`) }}</p>
-                      <p class="mt-0.5 text-foreground">{{ detail.sub2apiRole || t('admin.tickets.common.placeholder') }}</p>
-                    </div>
-                    <div>
-                      <p class="text-muted-foreground">{{ t(`${prefix}.sub2apiSrcHost`) }}</p>
-                      <p class="mt-0.5 truncate text-foreground" :title="detail.sub2apiSrcHost">{{ detail.sub2apiSrcHost || t('admin.tickets.common.placeholder') }}</p>
-                    </div>
-                  </div>
-                </div>
+              <div>
+                <p class="text-muted-foreground">{{ t(`${prefix}.priority`) }}</p>
+                <p class="mt-0.5 text-foreground">{{ detail.priority }}</p>
               </div>
-
-              <div class="space-y-3 border-t border-border/40 pt-5">
-                <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t(`${prefix}.sectionMessages`) }}</p>
-                <div class="max-h-80 space-y-3 overflow-y-auto rounded-lg border border-border/40 p-3">
-                  <div v-for="message in detail.messages" :key="message.id" class="space-y-1">
-                    <div class="flex items-center justify-between text-xs text-muted-foreground">
-                      <span class="font-medium text-foreground">
-                        {{ message.authorType === 'admin' ? t(`${prefix}.authorAdmin`) : (message.authorName || t(`${prefix}.authorCustomer`)) }}
-                      </span>
-                      <span>{{ formatDateTime(message.createdAt) }}</span>
-                    </div>
-                    <p class="whitespace-pre-wrap rounded-lg bg-surface/50 p-3 text-sm text-foreground">{{ message.body }}</p>
-                    <div v-if="message.attachments.length > 0" class="flex flex-wrap gap-2">
-                      <AdminAttachmentThumbnail
-                        v-for="attachment in message.attachments"
-                        :key="attachment.id"
-                        :attachment="attachment"
-                        @preview="openAttachmentPreview"
-                      />
-                    </div>
-                  </div>
-                </div>
+              <div>
+                <p class="text-muted-foreground">{{ t(`${prefix}.manualEmail`) }}</p>
+                <p class="mt-0.5 text-foreground">{{ detail.manualEmail }}</p>
               </div>
-
-              <div class="space-y-2 border-t border-border/40 pt-5">
-                <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t(`${prefix}.sectionReply`) }}</p>
-                <textarea
-                  v-model="replyBody"
-                  rows="3"
-                  class="w-full rounded-lg border border-border/50 bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                  :placeholder="t(`${prefix}.replyPlaceholder`)"
-                />
-                <div v-if="replyErrorKey" class="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-xs text-red-600 dark:text-red-400">
-                  <AlertCircle class="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  <span>{{ t(replyErrorKey) }}</span>
-                </div>
-                <div class="flex justify-end">
-                  <button
-                    type="button"
-                    class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-                    :disabled="isReplying || !replyBody.trim()"
-                    @click="submitReply"
-                  >
-                    <Loader2 v-if="isReplying" class="h-3.5 w-3.5 animate-spin" />
-                    <Send v-else class="h-3.5 w-3.5" />
-                    {{ t(`${prefix}.send`) }}
-                  </button>
-                </div>
+              <div>
+                <p class="text-muted-foreground">{{ t(`${prefix}.lastMessageAt`) }}</p>
+                <p class="mt-0.5 text-foreground">{{ formatDateTime(detail.lastMessageAt) }}</p>
+              </div>
+              <div>
+                <p class="text-muted-foreground">{{ t(`${prefix}.sub2apiUserId`) }}</p>
+                <p class="mt-0.5 text-foreground">
+                  {{ detail.sub2apiUserId || t('admin.tickets.common.placeholder') }}
+                </p>
+              </div>
+              <div>
+                <p class="text-muted-foreground">{{ t(`${prefix}.sub2apiEmail`) }}</p>
+                <p class="mt-0.5 text-foreground">{{ detail.sub2apiEmail || t('admin.tickets.common.placeholder') }}</p>
+              </div>
+              <div>
+                <p class="text-muted-foreground">{{ t(`${prefix}.sub2apiRole`) }}</p>
+                <p class="mt-0.5 text-foreground">{{ detail.sub2apiRole || t('admin.tickets.common.placeholder') }}</p>
+              </div>
+              <div>
+                <p class="text-muted-foreground">{{ t(`${prefix}.sub2apiSrcHost`) }}</p>
+                <p class="mt-0.5 truncate text-foreground" :title="detail.sub2apiSrcHost">
+                  {{ detail.sub2apiSrcHost || t('admin.tickets.common.placeholder') }}
+                </p>
               </div>
             </div>
           </div>
-        </Transition>
+        </div>
+
+        <div class="space-y-3 border-t border-border/40 pt-5">
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {{ t(`${prefix}.sectionMessages`) }}
+          </p>
+          <div class="max-h-80 space-y-3 overflow-y-auto rounded-lg border border-border/40 p-3">
+            <div v-for="message in detail.messages" :key="message.id" class="space-y-1">
+              <div class="flex items-center justify-between text-xs text-muted-foreground">
+                <span class="font-medium text-foreground">
+                  {{
+                    message.authorType === 'admin'
+                      ? t(`${prefix}.authorAdmin`)
+                      : message.authorName || t(`${prefix}.authorCustomer`)
+                  }}
+                </span>
+                <span>{{ formatDateTime(message.createdAt) }}</span>
+              </div>
+              <p class="whitespace-pre-wrap rounded-lg bg-surface/50 p-3 text-sm text-foreground">{{ message.body }}</p>
+              <div v-if="message.attachments.length > 0" class="flex flex-wrap gap-2">
+                <AdminAttachmentThumbnail
+                  v-for="attachment in message.attachments"
+                  :key="attachment.id"
+                  :attachment="attachment"
+                  @preview="openAttachmentPreview"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2 border-t border-border/40 pt-5">
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {{ t(`${prefix}.sectionReply`) }}
+          </p>
+          <UiInput
+            type="textarea"
+            v-model="replyBody"
+            rows="3"
+            class="w-full rounded-lg border border-border/50 bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            :placeholder="t(`${prefix}.replyPlaceholder`)"
+          />
+          <div
+            v-if="replyErrorKey"
+            class="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-xs text-red-600 dark:text-red-400"
+          >
+            <AlertCircle class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>{{ t(replyErrorKey) }}</span>
+          </div>
+          <div class="flex justify-end">
+            <UiButton
+              attr-type="button"
+              class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+              :disabled="isReplying || !replyBody.trim()"
+              @click="submitReply"
+            >
+              <Loader2 v-if="isReplying" class="h-3.5 w-3.5 animate-spin" />
+              <Send v-else class="h-3.5 w-3.5" />
+              {{ t(`${prefix}.send`) }}
+            </UiButton>
+          </div>
+        </div>
       </div>
-    </Transition>
-  </Teleport>
+    </div>
+  </UiDrawer>
 
   <AdminAttachmentPreviewModal
     :open="!!previewImage"

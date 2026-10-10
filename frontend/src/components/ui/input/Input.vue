@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { cn } from '@/lib/utils'
+import { computed, useAttrs } from 'vue'
+import { UiInput, UiNumberInput, UiDatePicker } from '../compat/controls'
+
+defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(
   defineProps<{
@@ -18,18 +20,21 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
-const value = computed({
-  get: () => props.modelValue,
-  set: (nextValue: string) => emit('update:modelValue', nextValue),
-})
+const attrs = useAttrs()
+const component = computed(() => props.type === 'number' ? UiNumberInput : props.type === 'datetime-local' ? UiDatePicker : UiInput)
 </script>
 
 <template>
-  <input
-    v-model="value"
+  <component
+    :is="component"
+    v-bind="attrs"
+    :model-value="modelValue"
     :type="type"
     :placeholder="placeholder"
     :autocomplete="autocomplete"
-    :class="cn('h-11 w-full rounded-lg border border-border/70 bg-surface px-4 text-sm text-foreground outline-none transition-[color,background-color,border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-60')"
-  />
+    @update:model-value="emit('update:modelValue', String($event ?? ''))"
+  >
+    <template v-if="$slots.prefix" #prefix><slot name="prefix" /></template>
+    <template v-if="$slots.suffix" #suffix><slot name="suffix" /></template>
+  </component>
 </template>

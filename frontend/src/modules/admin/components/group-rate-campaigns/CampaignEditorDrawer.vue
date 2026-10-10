@@ -81,17 +81,19 @@ const copyVar = async (varKey: string) => {
   try {
     await navigator.clipboard.writeText(varKey)
     copiedVar.value = varKey
-    setTimeout(() => { copiedVar.value = null }, 1500)
+    setTimeout(() => {
+      copiedVar.value = null
+    }, 1500)
   } catch (error) {
     copyError.value = true
     console.warn('Failed to copy notification template variable', error)
-    setTimeout(() => { copyError.value = false }, 1500)
+    setTimeout(() => {
+      copyError.value = false
+    }, 1500)
   }
 }
 
-const isGroupSelected = (groupName: string): boolean => (
-  selectedGroups.value.some((g) => g.groupName === groupName)
-)
+const isGroupSelected = (groupName: string): boolean => selectedGroups.value.some((g) => g.groupName === groupName)
 
 const groupMultiplierInput = (groupName: string): number | null => {
   const found = selectedGroups.value.find((g) => g.groupName === groupName)
@@ -153,7 +155,13 @@ const loadOptions = async () => {
   try {
     const [mappingOptions, channelSettings] = await Promise.all([
       getMySiteMappingOptions().catch(() => ({ ownGroups: [], mappings: [] })),
-      getNotificationChannelSettings().catch(() => ({ dingtalk: [], wecom: [], qq: [], feishu: [], telegram: [] })),
+      getNotificationChannelSettings().catch(() => ({
+        dingtalk: [],
+        wecom: [],
+        qq: [],
+        feishu: [],
+        telegram: [],
+      })),
     ])
     availableGroups.value = mappingOptions.ownGroups
 
@@ -179,12 +187,15 @@ const loadOptions = async () => {
   }
 }
 
-watch(() => props.open, (isOpen) => {
-  if (isOpen) {
-    resetForm()
-    void loadOptions()
-  }
-})
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen) {
+      resetForm()
+      void loadOptions()
+    }
+  },
+)
 
 const buildRequest = (): CreateGroupRateCampaignRequest => ({
   name: name.value.trim(),
@@ -286,309 +297,347 @@ const formatMultiplier = (value: number): string => `${Number(value.toFixed(4)).
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
+  <UiDrawer
+    v-if="open"
+    :show="Boolean(open)"
+    :z-index="150"
+    @mask-click="emit('close')"
+    @esc="emit('close')"
+    width="32rem"
+  >
+    <div
+      v-if="open"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="t(`${prefix}.titleCreate`)"
+      class="h-full w-full overflow-y-auto overscroll-contain border-l border-border/60 bg-card"
     >
-      <div v-if="open" class="fixed inset-0 z-[150]">
-        <div class="absolute inset-0 bg-background/60 backdrop-blur-sm" @click="emit('close')" />
-
-        <Transition
-          enter-active-class="transition duration-250 ease-out"
-          enter-from-class="translate-x-full"
-          enter-to-class="translate-x-0"
-          leave-active-class="transition duration-200 ease-in"
-          leave-from-class="translate-x-0"
-          leave-to-class="translate-x-full"
+      <div
+        class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border/60 bg-card/95 backdrop-blur px-5 py-4"
+      >
+        <div class="flex items-center gap-2.5">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Megaphone class="h-4 w-4" />
+          </div>
+          <h3 class="text-sm font-semibold text-foreground">
+            {{ t(`${prefix}.titleCreate`) }}
+          </h3>
+        </div>
+        <UiButton
+          attr-type="button"
+          class="rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
+          @click="emit('close')"
         >
+          <X class="h-4 w-4" />
+        </UiButton>
+      </div>
+
+      <div class="space-y-5 px-5 py-5">
+        <!-- 活动信息 -->
+        <div class="space-y-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {{ t(`${prefix}.sectionInfo`) }}
+          </p>
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.nameLabel`) }}</label>
+            <UiInput
+              v-model="name"
+              type="text"
+              :placeholder="t(`${prefix}.namePlaceholder`)"
+              class="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.descriptionLabel`) }}</label>
+            <UiInput
+              type="textarea"
+              v-model="description"
+              :placeholder="t(`${prefix}.descriptionPlaceholder`)"
+              rows="2"
+              class="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary resize-y"
+            />
+          </div>
+        </div>
+
+        <!-- 选择分组：手动选择 + 每个分组单独固定活动倍率 -->
+        <div class="space-y-3 border-t border-border/40 pt-5">
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {{ t(`${prefix}.sectionSelection`) }}
+          </p>
+          <p class="text-xs text-muted-foreground">
+            {{ t(`${prefix}.selectionHint`) }}
+          </p>
+
           <div
-            v-if="open"
-            role="dialog"
-            aria-modal="true"
-            :aria-label="t(`${prefix}.titleCreate`)"
-            class="absolute bottom-0 right-0 top-0 w-full max-w-lg overflow-y-auto overscroll-contain border-l border-border/60 bg-card shadow-2xl"
+            v-if="availableGroups.length === 0"
+            class="rounded-lg border border-border/40 bg-surface/30 p-3 text-xs text-muted-foreground"
           >
-            <div class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border/60 bg-card/95 backdrop-blur px-5 py-4">
-              <div class="flex items-center gap-2.5">
-                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Megaphone class="h-4 w-4" />
-                </div>
-                <h3 class="text-sm font-semibold text-foreground">{{ t(`${prefix}.titleCreate`) }}</h3>
+            {{ t(`${prefix}.groupsEmpty`) }}
+          </div>
+          <div v-else class="space-y-1.5 max-h-72 overflow-y-auto rounded-lg border border-border/40 p-2">
+            <div
+              v-for="group in availableGroups"
+              :key="group.groupName"
+              class="flex flex-wrap items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors"
+              :class="isGroupSelected(group.groupName) ? 'bg-primary/5' : 'hover:bg-surface/50'"
+            >
+              <div class="flex flex-1 min-w-0 items-center gap-2.5 cursor-pointer">
+                <UiChoice
+                  type="checkbox"
+                  :checked="isGroupSelected(group.groupName)"
+                  class="h-3.5 w-3.5 shrink-0 rounded border-border text-primary focus:ring-primary/40"
+                  @change="toggleGroupSelection(group.groupName)"
+                >
+                  <span class="flex-1 min-w-0 truncate text-foreground">{{ group.groupName }}</span>
+                </UiChoice>
               </div>
-              <button
-                type="button"
-                class="rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
-                @click="emit('close')"
-              >
-                <X class="h-4 w-4" />
-              </button>
-            </div>
-
-            <div class="space-y-5 px-5 py-5">
-              <!-- 活动信息 -->
-              <div class="space-y-3">
-                <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t(`${prefix}.sectionInfo`) }}</p>
-                <div class="space-y-1.5">
-                  <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.nameLabel`) }}</label>
-                  <input
-                    v-model="name"
-                    type="text"
-                    :placeholder="t(`${prefix}.namePlaceholder`)"
-                    class="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-                <div class="space-y-1.5">
-                  <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.descriptionLabel`) }}</label>
-                  <textarea
-                    v-model="description"
-                    :placeholder="t(`${prefix}.descriptionPlaceholder`)"
-                    rows="2"
-                    class="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary resize-y"
-                  />
-                </div>
-              </div>
-
-              <!-- 选择分组：手动选择 + 每个分组单独固定活动倍率 -->
-              <div class="space-y-3 border-t border-border/40 pt-5">
-                <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t(`${prefix}.sectionSelection`) }}</p>
-                <p class="text-xs text-muted-foreground">{{ t(`${prefix}.selectionHint`) }}</p>
-
-                <div v-if="availableGroups.length === 0" class="rounded-lg border border-border/40 bg-surface/30 p-3 text-xs text-muted-foreground">
-                  {{ t(`${prefix}.groupsEmpty`) }}
-                </div>
-                <div v-else class="space-y-1.5 max-h-72 overflow-y-auto rounded-lg border border-border/40 p-2">
-                  <div
-                    v-for="group in availableGroups"
-                    :key="group.groupName"
-                    class="flex flex-wrap items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors"
-                    :class="isGroupSelected(group.groupName) ? 'bg-primary/5' : 'hover:bg-surface/50'"
-                  >
-                    <label class="flex flex-1 min-w-0 items-center gap-2.5 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        :checked="isGroupSelected(group.groupName)"
-                        class="h-3.5 w-3.5 shrink-0 rounded border-border text-primary focus:ring-primary/40"
-                        @change="toggleGroupSelection(group.groupName)"
-                      />
-                      <span class="flex-1 min-w-0 truncate text-foreground">{{ group.groupName }}</span>
-                    </label>
-                    <span class="shrink-0 text-xs text-muted-foreground">
-                      {{ t('admin.groupRateCampaigns.detail.itemOriginal') }}: {{ formatMultiplier(group.multiplier) }}
-                    </span>
-                    <input
-                      v-if="isGroupSelected(group.groupName)"
-                      :value="groupMultiplierInput(group.groupName)"
-                      type="number"
-                      step="0.01"
-                      :placeholder="t(`${prefix}.groupMultiplierPlaceholder`)"
-                      class="w-28 shrink-0 rounded-md border border-border/50 bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                      @input="setGroupMultiplier(group.groupName, ($event.target as HTMLInputElement).value)"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <!-- 时间计划 -->
-              <div class="space-y-3 border-t border-border/40 pt-5">
-                <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t(`${prefix}.sectionSchedule`) }}</p>
-                <div class="space-y-1.5">
-                  <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.startModeLabel`) }}</label>
-                  <div class="flex gap-2">
-                    <button
-                      v-for="mode in (['now', 'scheduled', 'draft'] as const)"
-                      :key="mode"
-                      type="button"
-                      class="flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
-                      :class="startMode === mode ? 'border-primary bg-primary/10 text-primary' : 'border-border/50 bg-surface/30 text-muted-foreground hover:bg-surface/50'"
-                      @click="startMode = mode"
-                    >
-                      {{ t(`${prefix}.start${mode.charAt(0).toUpperCase()}${mode.slice(1)}`) }}
-                    </button>
-                  </div>
-                  <input
-                    v-if="startMode === 'scheduled'"
-                    v-model="startAt"
-                    type="datetime-local"
-                    class="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-                <div class="space-y-1.5">
-                  <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.endModeLabel`) }}</label>
-                  <div class="flex gap-2">
-                    <button
-                      v-for="mode in (['manual', 'scheduled'] as const)"
-                      :key="mode"
-                      type="button"
-                      class="flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
-                      :class="endMode === mode ? 'border-primary bg-primary/10 text-primary' : 'border-border/50 bg-surface/30 text-muted-foreground hover:bg-surface/50'"
-                      @click="endMode = mode"
-                    >
-                      {{ t(`${prefix}.end${mode.charAt(0).toUpperCase()}${mode.slice(1)}`) }}
-                    </button>
-                  </div>
-                  <input
-                    v-if="endMode === 'scheduled'"
-                    v-model="endAt"
-                    type="datetime-local"
-                    class="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-              </div>
-
-              <!-- 通知 -->
-              <div class="space-y-4 border-t border-border/40 pt-5">
-                <div class="flex items-center justify-between rounded-lg border border-border/40 bg-surface/30 px-4 py-3">
-                  <div class="flex items-center gap-2">
-                    <Bell v-if="notifyEnabled" class="h-4 w-4 text-primary" />
-                    <BellOff v-else class="h-4 w-4 text-muted-foreground" />
-                    <span class="text-sm font-medium text-foreground">{{ t(`${prefix}.sectionNotify`) }}</span>
-                  </div>
-                  <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" v-model="notifyEnabled" class="sr-only peer">
-                    <div class="w-9 h-5 bg-surface-elevated rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                </div>
-
-                <template v-if="notifyEnabled">
-                  <div class="space-y-1.5">
-                    <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.notifyBotSelectLabel`) }}</label>
-                    <div v-if="availableBots.length === 0" class="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-400">
-                      {{ t(`${prefix}.notifyNoBots`) }}
-                    </div>
-                    <div v-else class="space-y-1.5 max-h-40 overflow-y-auto rounded-lg border border-border/40 p-2">
-                      <label
-                        v-for="bot in availableBots"
-                        :key="bot.id"
-                        class="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm cursor-pointer transition-colors hover:bg-surface/50"
-                        :class="notifyBotIds.includes(bot.id) ? 'bg-primary/5' : ''"
-                      >
-                        <input
-                          type="checkbox"
-                          :checked="notifyBotIds.includes(bot.id)"
-                          @change="toggleBot(bot.id)"
-                          class="h-3.5 w-3.5 rounded border-border text-primary focus:ring-primary/40"
-                        />
-                        <span class="flex-1 text-foreground">{{ bot.name }}</span>
-                        <span class="rounded-full bg-surface-elevated px-1.5 py-0.5 text-[10px] text-muted-foreground">{{ bot.channel }}</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="space-y-1.5">
-                    <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.notifyStartTemplateLabel`) }}</label>
-                    <textarea
-                      v-model="notifyStartTemplate"
-                      rows="2"
-                      class="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-y"
-                    />
-                  </div>
-                  <div class="space-y-1.5">
-                    <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.notifyEndTemplateLabel`) }}</label>
-                    <textarea
-                      v-model="notifyEndTemplate"
-                      rows="2"
-                      class="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-y"
-                    />
-                  </div>
-
-                  <div class="space-y-1.5">
-                    <div class="inline-flex items-center gap-1.5">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.notifyVariablesTitle`) }}</label>
-                      <Tooltip :text="t(`${prefix}.notifyVariablesTitle`)" wide>
-                        <button type="button" class="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground/70 hover:text-foreground">
-                          <CircleHelp class="h-3.5 w-3.5" />
-                        </button>
-                      </Tooltip>
-                    </div>
-                    <div class="flex flex-wrap gap-1.5">
-                      <button
-                        v-for="v in templateVars"
-                        :key="v.key"
-                        type="button"
-                        class="inline-flex items-center gap-1 rounded-md border border-border/40 bg-surface/30 px-2 py-1 text-xs font-mono text-foreground transition-colors hover:bg-primary/10 hover:border-primary/30"
-                        :title="t(v.labelKey)"
-                        @click="copyVar(v.key)"
-                      >
-                        <Copy v-if="copiedVar !== v.key" class="h-3 w-3 text-muted-foreground" />
-                        <Check v-else class="h-3 w-3 text-emerald-500" />
-                        {{ v.key }}
-                      </button>
-                    </div>
-                    <p v-if="copyError" class="text-xs text-destructive">{{ t(`${prefix}.copyVarFailed`) }}</p>
-                  </div>
-                </template>
-              </div>
-
-              <!-- 预览 -->
-              <div class="space-y-3 border-t border-border/40 pt-5">
-                <div class="flex items-center justify-between">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t(`${prefix}.previewTitle`) }}</p>
-                  <Button variant="secondary" size="sm" class="gap-1.5" :disabled="isPreviewing" @click="runPreview">
-                    <Loader2 v-if="isPreviewing" class="h-3.5 w-3.5 animate-spin" />
-                    <Eye v-else class="h-3.5 w-3.5" />
-                    {{ t('admin.groupRateCampaigns.actions.preview') }}
-                  </Button>
-                </div>
-                <div v-if="previewErrorKey" class="rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-600 dark:text-red-400">
-                  {{ t(previewErrorKey) }}
-                </div>
-                <div v-else-if="previewItems.length === 0" class="rounded-lg border border-border/40 bg-surface/30 p-3 text-xs text-muted-foreground">
-                  {{ t(`${prefix}.previewEmpty`) }}
-                </div>
-                <div v-else class="space-y-2">
-                  <p class="text-xs text-muted-foreground">{{ t(`${prefix}.previewTotal`, { total: previewTotal ?? previewItems.length }) }}</p>
-                  <div class="max-h-48 overflow-y-auto rounded-lg border border-border/40">
-                    <table class="w-full text-left text-xs">
-                      <thead class="sticky top-0 bg-surface-elevated">
-                        <tr>
-                          <th class="px-3 py-2 font-medium text-muted-foreground">{{ t(`${prefix}.previewGroupName`) }}</th>
-                          <th class="px-3 py-2 font-medium text-muted-foreground">{{ t(`${prefix}.previewOriginal`) }}</th>
-                          <th class="px-3 py-2 font-medium text-muted-foreground">{{ t(`${prefix}.previewCampaign`) }}</th>
-                        </tr>
-                      </thead>
-                      <tbody class="divide-y divide-border/30">
-                        <tr v-for="item in previewItems" :key="item.groupId || item.groupName">
-                          <td class="px-3 py-2 text-foreground">{{ item.groupName }}</td>
-                          <td class="px-3 py-2 text-muted-foreground">{{ formatMultiplier(item.originalMultiplier) }}</td>
-                          <td class="px-3 py-2 font-semibold text-primary">{{ formatMultiplier(item.campaignMultiplier) }}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-
-              <div v-if="validationError" class="rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-600 dark:text-red-400">
-                {{ validationError }}
-              </div>
-            </div>
-
-            <div class="sticky bottom-0 flex items-center justify-end gap-2 border-t border-border/60 bg-card/95 backdrop-blur px-5 py-4">
-              <button
-                type="button"
-                class="rounded-lg border border-border/50 px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
-                @click="emit('close')"
-              >
-                {{ t('admin.groupRateCampaigns.actions.cancelEdit') }}
-              </button>
-              <button
-                type="button"
-                class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-                :disabled="isSubmitting"
-                @click="handleSubmit"
-              >
-                <Loader2 v-if="isSubmitting" class="h-3.5 w-3.5 animate-spin" />
-                {{ t('admin.groupRateCampaigns.actions.confirmCreate') }}
-              </button>
+              <span class="shrink-0 text-xs text-muted-foreground">
+                {{ t('admin.groupRateCampaigns.detail.itemOriginal') }}:
+                {{ formatMultiplier(group.multiplier) }}
+              </span>
+              <UiNumberInput
+                v-if="isGroupSelected(group.groupName)"
+                :value="groupMultiplierInput(group.groupName)"
+                type="number"
+                step="0.01"
+                :placeholder="t(`${prefix}.groupMultiplierPlaceholder`)"
+                class="w-28 shrink-0 rounded-md border border-border/50 bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                @input="setGroupMultiplier(group.groupName, ($event.target as HTMLInputElement).value)"
+              />
             </div>
           </div>
-        </Transition>
+        </div>
+
+        <!-- 时间计划 -->
+        <div class="space-y-3 border-t border-border/40 pt-5">
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {{ t(`${prefix}.sectionSchedule`) }}
+          </p>
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.startModeLabel`) }}</label>
+            <NRadioGroup :value="startMode" @update:value="startMode = $event" size="small" class="ui-radio-segmented">
+              <NRadioButton v-for="mode in ['now', 'scheduled', 'draft'] as const" :key="mode" :value="mode">
+                {{ t(`${prefix}.start${mode.charAt(0).toUpperCase()}${mode.slice(1)}`) }}
+              </NRadioButton>
+            </NRadioGroup>
+            <UiDatePicker
+              v-if="startMode === 'scheduled'"
+              v-model="startAt"
+              type="datetime-local"
+              class="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.endModeLabel`) }}</label>
+            <NRadioGroup :value="endMode" @update:value="endMode = $event" size="small" class="ui-radio-segmented">
+              <NRadioButton v-for="mode in ['manual', 'scheduled'] as const" :key="mode" :value="mode">
+                {{ t(`${prefix}.end${mode.charAt(0).toUpperCase()}${mode.slice(1)}`) }}
+              </NRadioButton>
+            </NRadioGroup>
+            <UiDatePicker
+              v-if="endMode === 'scheduled'"
+              v-model="endAt"
+              type="datetime-local"
+              class="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+        </div>
+
+        <!-- 通知 -->
+        <div class="space-y-4 border-t border-border/40 pt-5">
+          <div class="flex items-center justify-between rounded-lg border border-border/40 bg-surface/30 px-4 py-3">
+            <div class="flex items-center gap-2">
+              <Bell v-if="notifyEnabled" class="h-4 w-4 text-primary" />
+              <BellOff v-else class="h-4 w-4 text-muted-foreground" />
+              <span class="text-sm font-medium text-foreground">{{ t(`${prefix}.sectionNotify`) }}</span>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <UiChoice switch type="checkbox" v-model="notifyEnabled" class="sr-only peer" />
+            </label>
+          </div>
+
+          <template v-if="notifyEnabled">
+            <div class="space-y-1.5">
+              <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.notifyBotSelectLabel`) }}</label>
+              <div
+                v-if="availableBots.length === 0"
+                class="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-400"
+              >
+                {{ t(`${prefix}.notifyNoBots`) }}
+              </div>
+              <div v-else class="space-y-1.5 max-h-40 overflow-y-auto rounded-lg border border-border/40 p-2">
+                <div
+                  v-for="bot in availableBots"
+                  :key="bot.id"
+                  class="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm cursor-pointer transition-colors hover:bg-surface/50"
+                  :class="notifyBotIds.includes(bot.id) ? 'bg-primary/5' : ''"
+                >
+                  <UiChoice
+                    type="checkbox"
+                    :checked="notifyBotIds.includes(bot.id)"
+                    @change="toggleBot(bot.id)"
+                    class="h-3.5 w-3.5 rounded border-border text-primary focus:ring-primary/40"
+                  >
+                    <span class="flex-1 text-foreground">{{ bot.name }}</span>
+                    <span class="rounded-full bg-surface-elevated px-1.5 py-0.5 text-[10px] text-muted-foreground">{{
+                      bot.channel
+                    }}</span>
+                  </UiChoice>
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-xs font-medium text-muted-foreground">{{
+                t(`${prefix}.notifyStartTemplateLabel`)
+              }}</label>
+              <UiInput
+                type="textarea"
+                v-model="notifyStartTemplate"
+                rows="2"
+                class="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-y"
+              />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-medium text-muted-foreground">{{
+                t(`${prefix}.notifyEndTemplateLabel`)
+              }}</label>
+              <UiInput
+                type="textarea"
+                v-model="notifyEndTemplate"
+                rows="2"
+                class="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-y"
+              />
+            </div>
+
+            <div class="space-y-1.5">
+              <div class="inline-flex items-center gap-1.5">
+                <label class="text-xs font-medium text-muted-foreground">{{
+                  t(`${prefix}.notifyVariablesTitle`)
+                }}</label>
+                <Tooltip :text="t(`${prefix}.notifyVariablesTitle`)" wide>
+                  <UiButton
+                    attr-type="button"
+                    class="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground/70 hover:text-foreground"
+                  >
+                    <CircleHelp class="h-3.5 w-3.5" />
+                  </UiButton>
+                </Tooltip>
+              </div>
+              <div class="flex flex-wrap gap-1.5">
+                <UiButton
+                  v-for="v in templateVars"
+                  :key="v.key"
+                  attr-type="button"
+                  class="inline-flex items-center gap-1 rounded-md border border-border/40 bg-surface/30 px-2 py-1 text-xs font-mono text-foreground transition-colors hover:bg-primary/10 hover:border-primary/30"
+                  :title="t(v.labelKey)"
+                  @click="copyVar(v.key)"
+                >
+                  <Copy v-if="copiedVar !== v.key" class="h-3 w-3 text-muted-foreground" />
+                  <Check v-else class="h-3 w-3 text-emerald-500" />
+                  {{ v.key }}
+                </UiButton>
+              </div>
+              <p v-if="copyError" class="text-xs text-destructive">
+                {{ t(`${prefix}.copyVarFailed`) }}
+              </p>
+            </div>
+          </template>
+        </div>
+
+        <!-- 预览 -->
+        <div class="space-y-3 border-t border-border/40 pt-5">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {{ t(`${prefix}.previewTitle`) }}
+            </p>
+            <Button variant="secondary" size="sm" class="gap-1.5" :disabled="isPreviewing" @click="runPreview">
+              <Loader2 v-if="isPreviewing" class="h-3.5 w-3.5 animate-spin" />
+              <Eye v-else class="h-3.5 w-3.5" />
+              {{ t('admin.groupRateCampaigns.actions.preview') }}
+            </Button>
+          </div>
+          <div
+            v-if="previewErrorKey"
+            class="rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-600 dark:text-red-400"
+          >
+            {{ t(previewErrorKey) }}
+          </div>
+          <div
+            v-else-if="previewItems.length === 0"
+            class="rounded-lg border border-border/40 bg-surface/30 p-3 text-xs text-muted-foreground"
+          >
+            {{ t(`${prefix}.previewEmpty`) }}
+          </div>
+          <div v-else class="space-y-2">
+            <p class="text-xs text-muted-foreground">
+              {{
+                t(`${prefix}.previewTotal`, {
+                  total: previewTotal ?? previewItems.length,
+                })
+              }}
+            </p>
+            <div class="max-h-48 overflow-y-auto rounded-lg border border-border/40">
+              <UiTable class="w-full text-left text-xs">
+                <thead class="sticky top-0 bg-surface-elevated">
+                  <tr>
+                    <th class="px-3 py-2 font-medium text-muted-foreground">
+                      {{ t(`${prefix}.previewGroupName`) }}
+                    </th>
+                    <th class="px-3 py-2 font-medium text-muted-foreground">
+                      {{ t(`${prefix}.previewOriginal`) }}
+                    </th>
+                    <th class="px-3 py-2 font-medium text-muted-foreground">
+                      {{ t(`${prefix}.previewCampaign`) }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border/30">
+                  <tr v-for="item in previewItems" :key="item.groupId || item.groupName">
+                    <td class="px-3 py-2 text-foreground">
+                      {{ item.groupName }}
+                    </td>
+                    <td class="px-3 py-2 text-muted-foreground">
+                      {{ formatMultiplier(item.originalMultiplier) }}
+                    </td>
+                    <td class="px-3 py-2 font-semibold text-primary">
+                      {{ formatMultiplier(item.campaignMultiplier) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </UiTable>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-if="validationError"
+          class="rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-600 dark:text-red-400"
+        >
+          {{ validationError }}
+        </div>
       </div>
-    </Transition>
-  </Teleport>
+
+      <div
+        class="sticky bottom-0 flex items-center justify-end gap-2 border-t border-border/60 bg-card/95 backdrop-blur px-5 py-4"
+      >
+        <UiButton
+          attr-type="button"
+          class="rounded-lg border border-border/50 px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
+          @click="emit('close')"
+        >
+          {{ t('admin.groupRateCampaigns.actions.cancelEdit') }}
+        </UiButton>
+        <UiButton
+          attr-type="button"
+          class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+          :disabled="isSubmitting"
+          @click="handleSubmit"
+        >
+          <Loader2 v-if="isSubmitting" class="h-3.5 w-3.5 animate-spin" />
+          {{ t('admin.groupRateCampaigns.actions.confirmCreate') }}
+        </UiButton>
+      </div>
+    </div>
+  </UiDrawer>
 </template>

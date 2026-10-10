@@ -1,7 +1,21 @@
 <script setup lang="ts">
-import { onUnmounted, ref, watch } from 'vue'
+import { useConfirm } from '@/components/ui/compat/useConfirm'
+const confirmAction = useConfirm()
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { AlertCircle, Check, Copy, ExternalLink, Loader2, MessageSquare, Plus, RefreshCw, RotateCcw, Trash2, X } from 'lucide-vue-next'
+import {
+  AlertCircle,
+  Check,
+  Copy,
+  ExternalLink,
+  Loader2,
+  MessageSquare,
+  Plus,
+  RefreshCw,
+  RotateCcw,
+  Trash2,
+  X,
+} from 'lucide-vue-next'
 import { getEmbedConfig, rotateEmbedToken, updateEmbedConfig } from '../../api/tickets'
 import type { TicketEmbedConfig, TicketEmbedTemplate } from '../../types/tickets'
 
@@ -15,6 +29,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const prefix = 'admin.tickets.embedConfig'
+const sectionOptions = computed(() =>
+  sections.map((section) => ({
+    key: section,
+    label: t(`${prefix}.sections.${section}`),
+  })),
+)
 
 const config = ref<TicketEmbedConfig | null>(null)
 const isLoading = ref(false)
@@ -48,9 +68,8 @@ const clearSaveFeedback = () => {
   clearSaveSuccessTimer()
 }
 
-const isCurrentSave = (sessionSeq: number, requestSeq: number): boolean => (
+const isCurrentSave = (sessionSeq: number, requestSeq: number): boolean =>
   props.open && sessionSeq === modalSessionSeq && requestSeq === saveRequestSeq
-)
 
 // 组件本身随后台 TicketsView 一直挂载，v-if 只控制内部面板显隐，理论上不会真的被卸载；
 // 仍然显式清理 timer，覆盖父组件被整体卸载（例如路由切换离开后台）的情况。
@@ -102,14 +121,6 @@ const applyConfig = (next: TicketEmbedConfig) => {
   priorityDraft.value = [...(next.priorityOptions ?? [])]
 }
 
-const decrementMaxImages = () => {
-  maxImagesDraft.value = Math.max(MIN_MAX_IMAGES, maxImagesDraft.value - 1)
-}
-
-const incrementMaxImages = () => {
-  maxImagesDraft.value = Math.min(MAX_MAX_IMAGES, maxImagesDraft.value + 1)
-}
-
 const load = async () => {
   isLoading.value = true
   errorKey.value = null
@@ -122,20 +133,23 @@ const load = async () => {
   }
 }
 
-watch(() => props.open, (isOpen) => {
-  // 打开和关闭都各自开启新一轮弹窗会话：递增 modalSessionSeq 让任何仍在途中的旧 save() 请求
-  // 在 resolve/reject 时被 isCurrentSave 判定为过期而静默丢弃，不会用旧请求的结果（无论成功还是
-  // 失败）污染新一轮会话——包括"保存后立刻关闭再重开"这种旧请求仍未返回的场景。
-  // isSaving 在这里同步复位是安全的：后续旧请求的 finally 分支会因为 isCurrentSave 为 false
-  // 而不再回写 isSaving，不会出现"复位后又被旧请求重新置为 true"的 stale update。
-  modalSessionSeq += 1
-  isSaving.value = false
-  clearSaveFeedback()
-  if (isOpen) {
-    activeSection.value = 'basic'
-    void load()
-  }
-})
+watch(
+  () => props.open,
+  (isOpen) => {
+    // 打开和关闭都各自开启新一轮弹窗会话：递增 modalSessionSeq 让任何仍在途中的旧 save() 请求
+    // 在 resolve/reject 时被 isCurrentSave 判定为过期而静默丢弃，不会用旧请求的结果（无论成功还是
+    // 失败）污染新一轮会话——包括"保存后立刻关闭再重开"这种旧请求仍未返回的场景。
+    // isSaving 在这里同步复位是安全的：后续旧请求的 finally 分支会因为 isCurrentSave 为 false
+    // 而不再回写 isSaving，不会出现"复位后又被旧请求重新置为 true"的 stale update。
+    modalSessionSeq += 1
+    isSaving.value = false
+    clearSaveFeedback()
+    if (isOpen) {
+      activeSection.value = 'basic'
+      void load()
+    }
+  },
+)
 
 const addOption = (list: typeof categoryDraft, input: typeof newCategoryOption) => {
   const value = input.value.trim()
@@ -151,11 +165,15 @@ const removeOption = (list: typeof categoryDraft, index: number) => {
 
 const addCategoryOption = () => addOption(categoryDraft, newCategoryOption)
 const removeCategoryOption = (index: number) => removeOption(categoryDraft, index)
-const restoreCategoryDefaults = () => { categoryDraft.value = [...DEFAULT_CATEGORY_OPTIONS] }
+const restoreCategoryDefaults = () => {
+  categoryDraft.value = [...DEFAULT_CATEGORY_OPTIONS]
+}
 
 const addPriorityOption = () => addOption(priorityDraft, newPriorityOption)
 const removePriorityOption = (index: number) => removeOption(priorityDraft, index)
-const restorePriorityDefaults = () => { priorityDraft.value = [...DEFAULT_PRIORITY_OPTIONS] }
+const restorePriorityDefaults = () => {
+  priorityDraft.value = [...DEFAULT_PRIORITY_OPTIONS]
+}
 
 const save = async () => {
   const sessionSeq = modalSessionSeq
@@ -191,7 +209,7 @@ const save = async () => {
 
 // 轮换 embed token 会让旧的 iframe 嵌入地址立即失效，属于有一定破坏性的操作，必须二次确认。
 const rotateToken = async () => {
-  if (!window.confirm(t(`${prefix}.confirmRotate`))) return
+  if (!(await confirmAction(t(`${prefix}.confirmRotate`)))) return
   isRotating.value = true
   rotateErrorKey.value = null
   try {
@@ -209,10 +227,14 @@ const copyEmbedUrl = async () => {
     await navigator.clipboard.writeText(buildFrontendEmbedUrl(config.value.embedToken))
     isCopied.value = true
     copyErrorKey.value = null
-    setTimeout(() => { isCopied.value = false }, 1500)
+    setTimeout(() => {
+      isCopied.value = false
+    }, 1500)
   } catch (error) {
     copyErrorKey.value = `${prefix}.copyFailed`
-    setTimeout(() => { copyErrorKey.value = null }, 1500)
+    setTimeout(() => {
+      copyErrorKey.value = null
+    }, 1500)
   }
 }
 
@@ -226,326 +248,301 @@ const openPreview = () => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
+  <UiModal v-if="open" :show="Boolean(open)" :z-index="150" @mask-click="emit('close')" @esc="emit('close')">
+    <div
+      v-if="open"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="t(`${prefix}.title`)"
+      class="relative flex h-[min(760px,85dvh)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl"
     >
-      <div v-if="open" class="fixed inset-0 z-[150] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-background/60 backdrop-blur-sm" @click="emit('close')" />
-
-        <Transition
-          enter-active-class="transition duration-200 ease-out"
-          enter-from-class="opacity-0 scale-95"
-          enter-to-class="opacity-100 scale-100"
-          leave-active-class="transition duration-150 ease-in"
-          leave-from-class="opacity-100 scale-100"
-          leave-to-class="opacity-0 scale-95"
+      <div
+        class="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 bg-card/95 backdrop-blur px-5 py-4"
+      >
+        <div class="flex items-center gap-2.5">
+          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <MessageSquare class="h-4 w-4" />
+          </div>
+          <h2 class="text-sm font-semibold text-foreground">
+            {{ t(`${prefix}.title`) }}
+          </h2>
+        </div>
+        <UiButton
+          attr-type="button"
+          class="rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
+          @click="emit('close')"
         >
-          <div
-            v-if="open"
-            role="dialog"
-            aria-modal="true"
-            :aria-label="t(`${prefix}.title`)"
-            class="relative flex h-[min(760px,85dvh)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl"
-          >
-            <div class="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 bg-card/95 backdrop-blur px-5 py-4">
-              <div class="flex items-center gap-2.5">
-                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <MessageSquare class="h-4 w-4" />
-                </div>
-                <h2 class="text-sm font-semibold text-foreground">{{ t(`${prefix}.title`) }}</h2>
-              </div>
-              <button
-                type="button"
-                class="rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
-                @click="emit('close')"
-              >
-                <X class="h-4 w-4" />
-              </button>
-            </div>
-
-            <!-- loading/error/config 三种状态共用同一个固定高度外壳（flex-1 撑满 header 之外的
-                 剩余空间，父容器已是固定高度），切换状态或选项数量变化都不会让弹窗整体跳高跳低。 -->
-            <div class="min-h-0 flex-1 overflow-hidden">
-              <div v-if="isLoading" class="flex h-full items-center justify-center">
-                <Loader2 class="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-
-              <div v-else-if="errorKey && !config" class="h-full overflow-y-auto px-5 py-5">
-                <div class="rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-600 dark:text-red-400">
-                  {{ t(errorKey) }}
-                </div>
-              </div>
-
-              <div v-else-if="config" class="flex h-full flex-col overflow-hidden sm:flex-row">
-              <!-- 左侧分组导航：桌面端纵向排列固定宽度侧栏；移动端退化为顶部横向按钮行，避免溢出屏幕。 -->
-              <nav class="flex shrink-0 gap-1 overflow-x-auto border-b border-border/40 px-3 py-2 sm:w-40 sm:flex-col sm:overflow-x-visible sm:border-b-0 sm:border-r sm:px-2 sm:py-3">
-                <button
-                  v-for="section in sections"
-                  :key="section"
-                  type="button"
-                  class="shrink-0 rounded-lg px-3 py-2 text-left text-xs font-medium transition-colors sm:w-full"
-                  :class="activeSection === section
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-surface-elevated hover:text-foreground'"
-                  @click="activeSection = section"
-                >
-                  {{ t(`${prefix}.sections.${section}`) }}
-                </button>
-              </nav>
-
-              <div class="flex-1 space-y-5 overflow-y-auto px-5 py-5">
-                <template v-if="activeSection === 'basic'">
-                  <p class="rounded-lg border border-border/40 bg-surface/30 p-3 text-xs text-muted-foreground">
-                    {{ t(`${prefix}.legacyNotice`) }}
-                  </p>
-
-                  <div>
-                    <label class="mb-1 block text-xs font-medium text-muted-foreground">{{ t(`${prefix}.embedUrl`) }}</label>
-                    <div class="flex items-center gap-2">
-                      <input
-                        :value="buildFrontendEmbedUrl(config.embedToken)"
-                        type="text"
-                        readonly
-                        class="h-10 flex-1 truncate rounded-lg border border-border/50 bg-surface px-3 text-sm text-foreground outline-none"
-                      />
-                      <button
-                        type="button"
-                        class="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-border/50 px-3 text-sm text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
-                        @click="copyEmbedUrl"
-                      >
-                        <Check v-if="isCopied" class="h-3.5 w-3.5 text-emerald-500" />
-                        <Copy v-else class="h-3.5 w-3.5" />
-                        {{ isCopied ? t(`${prefix}.copied`) : t(`${prefix}.copy`) }}
-                      </button>
-                    </div>
-                    <p v-if="copyErrorKey" class="mt-1 text-xs text-red-600 dark:text-red-400">{{ t(copyErrorKey) }}</p>
-                    <p class="mt-1 text-xs text-muted-foreground">{{ t(`${prefix}.embedUrlHint`) }}</p>
-                  </div>
-
-                  <button
-                    type="button"
-                    class="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-border/50 px-3 text-sm font-medium text-foreground transition-colors hover:bg-surface-elevated"
-                    @click="openPreview"
-                  >
-                    <ExternalLink class="h-3.5 w-3.5" />
-                    {{ t(`${prefix}.openPreview`) }}
-                  </button>
-                  <p class="-mt-3 text-xs text-muted-foreground">{{ t(`${prefix}.openPreviewHint`) }}</p>
-
-                  <div>
-                    <label class="mb-1 block text-xs font-medium text-muted-foreground">{{ t(`${prefix}.template`) }}</label>
-                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                      <button
-                        v-for="option in templateOptions"
-                        :key="option"
-                        type="button"
-                        class="rounded-lg border px-3 py-2.5 text-left text-xs transition-colors"
-                        :class="templateDraft === option
-                          ? 'border-primary bg-primary/10 text-foreground'
-                          : 'border-border/50 text-muted-foreground hover:bg-surface-elevated hover:text-foreground'"
-                        @click="templateDraft = option"
-                      >
-                        <p class="font-medium">{{ t(`${prefix}.templates.${option}.name`) }}</p>
-                        <p class="mt-0.5 text-muted-foreground">{{ t(`${prefix}.templates.${option}.description`) }}</p>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label class="mb-1 block text-xs font-medium text-muted-foreground">{{ t(`${prefix}.maxImages`) }}</label>
-                    <div class="flex items-center gap-2">
-                      <button
-                        type="button"
-                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/50 text-foreground transition-colors hover:bg-surface-elevated disabled:opacity-50"
-                        :disabled="maxImagesDraft <= MIN_MAX_IMAGES"
-                        @click="decrementMaxImages"
-                      >
-                        −
-                      </button>
-                      <input
-                        :value="maxImagesDraft"
-                        type="number"
-                        :min="MIN_MAX_IMAGES"
-                        :max="MAX_MAX_IMAGES"
-                        readonly
-                        class="h-9 w-16 rounded-lg border border-border/50 bg-surface text-center text-sm text-foreground outline-none"
-                      />
-                      <button
-                        type="button"
-                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/50 text-foreground transition-colors hover:bg-surface-elevated disabled:opacity-50"
-                        :disabled="maxImagesDraft >= MAX_MAX_IMAGES"
-                        @click="incrementMaxImages"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <p class="mt-1 text-xs text-muted-foreground">{{ t(`${prefix}.maxImagesHint`) }}</p>
-                  </div>
-                </template>
-
-                <template v-else-if="activeSection === 'category'">
-                  <div>
-                    <div class="mb-2 flex items-center justify-between">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.categoryOptions`) }}</label>
-                      <button
-                        type="button"
-                        class="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                        @click="restoreCategoryDefaults"
-                      >
-                        <RotateCcw class="h-3 w-3" />
-                        {{ t(`${prefix}.restoreDefaults`) }}
-                      </button>
-                    </div>
-                    <div class="space-y-2">
-                      <div v-for="(option, index) in categoryDraft" :key="index" class="flex items-center gap-2">
-                        <input
-                          v-model="categoryDraft[index]"
-                          type="text"
-                          class="h-9 flex-1 rounded-lg border border-border/50 bg-surface px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                        />
-                        <button
-                          type="button"
-                          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/50 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40"
-                          :disabled="categoryDraft.length <= 1"
-                          :aria-label="t(`${prefix}.removeOption`)"
-                          @click="removeCategoryOption(index)"
-                        >
-                          <Trash2 class="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    <div class="mt-2 flex items-center gap-2">
-                      <input
-                        v-model="newCategoryOption"
-                        type="text"
-                        :placeholder="t(`${prefix}.addOptionPlaceholder`)"
-                        class="h-9 flex-1 rounded-lg border border-dashed border-border/60 bg-surface px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                        @keyup.enter="addCategoryOption"
-                      />
-                      <button
-                        type="button"
-                        class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border/50 px-3 text-xs text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
-                        @click="addCategoryOption"
-                      >
-                        <Plus class="h-3.5 w-3.5" />
-                        {{ t(`${prefix}.addOption`) }}
-                      </button>
-                    </div>
-                    <p class="mt-2 text-xs text-muted-foreground">{{ t(`${prefix}.optionsHint`) }}</p>
-                  </div>
-                </template>
-
-                <template v-else-if="activeSection === 'priority'">
-                  <div>
-                    <div class="mb-2 flex items-center justify-between">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.priorityOptions`) }}</label>
-                      <button
-                        type="button"
-                        class="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                        @click="restorePriorityDefaults"
-                      >
-                        <RotateCcw class="h-3 w-3" />
-                        {{ t(`${prefix}.restoreDefaults`) }}
-                      </button>
-                    </div>
-                    <div class="space-y-2">
-                      <div v-for="(option, index) in priorityDraft" :key="index" class="flex items-center gap-2">
-                        <input
-                          v-model="priorityDraft[index]"
-                          type="text"
-                          class="h-9 flex-1 rounded-lg border border-border/50 bg-surface px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                        />
-                        <button
-                          type="button"
-                          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/50 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40"
-                          :disabled="priorityDraft.length <= 1"
-                          :aria-label="t(`${prefix}.removeOption`)"
-                          @click="removePriorityOption(index)"
-                        >
-                          <Trash2 class="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    <div class="mt-2 flex items-center gap-2">
-                      <input
-                        v-model="newPriorityOption"
-                        type="text"
-                        :placeholder="t(`${prefix}.addOptionPlaceholder`)"
-                        class="h-9 flex-1 rounded-lg border border-dashed border-border/60 bg-surface px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                        @keyup.enter="addPriorityOption"
-                      />
-                      <button
-                        type="button"
-                        class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border/50 px-3 text-xs text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
-                        @click="addPriorityOption"
-                      >
-                        <Plus class="h-3.5 w-3.5" />
-                        {{ t(`${prefix}.addOption`) }}
-                      </button>
-                    </div>
-                    <p class="mt-2 text-xs text-muted-foreground">{{ t(`${prefix}.optionsHint`) }}</p>
-                  </div>
-                </template>
-
-                <div
-                  v-if="saveSuccessKey"
-                  role="status"
-                  aria-live="polite"
-                  class="flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-600 dark:text-emerald-400"
-                >
-                  <Check class="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  <span>{{ t(saveSuccessKey) }}</span>
-                </div>
-                <div
-                  v-if="saveErrorKey"
-                  role="alert"
-                  class="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-xs text-red-600 dark:text-red-400"
-                >
-                  <AlertCircle class="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  <span>{{ t(saveErrorKey) }}</span>
-                </div>
-                <div
-                  v-if="rotateErrorKey"
-                  role="alert"
-                  class="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-xs text-red-600 dark:text-red-400"
-                >
-                  <AlertCircle class="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  <span>{{ t(rotateErrorKey) }}</span>
-                </div>
-
-                <div class="flex flex-wrap items-center justify-between gap-2 border-t border-border/40 pt-4">
-                  <button
-                    type="button"
-                    class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-red-500/30 px-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-500/10 disabled:opacity-50 dark:text-red-400"
-                    :disabled="isRotating"
-                    @click="rotateToken"
-                  >
-                    <Loader2 v-if="isRotating" class="h-3.5 w-3.5 animate-spin" />
-                    <RefreshCw v-else class="h-3.5 w-3.5" />
-                    {{ t(`${prefix}.rotateToken`) }}
-                  </button>
-                  <button
-                    type="button"
-                    class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-                    :disabled="isSaving"
-                    @click="save"
-                  >
-                    <Loader2 v-if="isSaving" class="h-3.5 w-3.5 animate-spin" />
-                    {{ isSaving ? t(`${prefix}.saving`) : t(`${prefix}.saveTemplate`) }}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          </div>
-        </Transition>
+          <X class="h-4 w-4" />
+        </UiButton>
       </div>
-    </Transition>
-  </Teleport>
+
+      <!-- loading/error/config 三种状态共用同一个固定高度外壳（flex-1 撑满 header 之外的
+                 剩余空间，父容器已是固定高度），切换状态或选项数量变化都不会让弹窗整体跳高跳低。 -->
+      <div class="min-h-0 flex-1 overflow-hidden">
+        <div v-if="isLoading" class="flex h-full items-center justify-center">
+          <Loader2 class="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+
+        <div v-else-if="errorKey && !config" class="h-full overflow-y-auto px-5 py-5">
+          <div class="rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-600 dark:text-red-400">
+            {{ t(errorKey) }}
+          </div>
+        </div>
+
+        <div v-else-if="config" class="flex h-full flex-col overflow-hidden sm:flex-row">
+          <!-- 左侧分组导航：桌面端纵向排列固定宽度侧栏；移动端退化为顶部横向按钮行，避免溢出屏幕。 -->
+          <nav class="ui-config-navigation shrink-0 border-b border-border/40 sm:border-b-0 sm:border-r">
+            <NMenu :value="activeSection" :options="sectionOptions" @update:value="activeSection = $event" />
+          </nav>
+
+          <div class="flex-1 space-y-5 overflow-y-auto px-5 py-5">
+            <template v-if="activeSection === 'basic'">
+              <p class="rounded-lg border border-border/40 bg-surface/30 p-3 text-xs text-muted-foreground">
+                {{ t(`${prefix}.legacyNotice`) }}
+              </p>
+
+              <div>
+                <label class="mb-1 block text-xs font-medium text-muted-foreground">{{
+                  t(`${prefix}.embedUrl`)
+                }}</label>
+                <div class="flex items-center gap-2">
+                  <UiInput
+                    :value="buildFrontendEmbedUrl(config.embedToken)"
+                    type="text"
+                    readonly
+                    class="h-10 flex-1 truncate rounded-lg border border-border/50 bg-surface px-3 text-sm text-foreground outline-none"
+                  />
+                  <UiButton
+                    attr-type="button"
+                    class="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-border/50 px-3 text-sm text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
+                    @click="copyEmbedUrl"
+                  >
+                    <Check v-if="isCopied" class="h-3.5 w-3.5 text-emerald-500" />
+                    <Copy v-else class="h-3.5 w-3.5" />
+                    {{ isCopied ? t(`${prefix}.copied`) : t(`${prefix}.copy`) }}
+                  </UiButton>
+                </div>
+                <p v-if="copyErrorKey" class="mt-1 text-xs text-red-600 dark:text-red-400">
+                  {{ t(copyErrorKey) }}
+                </p>
+                <p class="mt-1 text-xs text-muted-foreground">
+                  {{ t(`${prefix}.embedUrlHint`) }}
+                </p>
+              </div>
+
+              <UiButton
+                attr-type="button"
+                class="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-border/50 px-3 text-sm font-medium text-foreground transition-colors hover:bg-surface-elevated"
+                @click="openPreview"
+              >
+                <ExternalLink class="h-3.5 w-3.5" />
+                {{ t(`${prefix}.openPreview`) }}
+              </UiButton>
+              <p class="-mt-3 text-xs text-muted-foreground">
+                {{ t(`${prefix}.openPreviewHint`) }}
+              </p>
+
+              <div>
+                <label class="mb-1 block text-xs font-medium text-muted-foreground">{{
+                  t(`${prefix}.template`)
+                }}</label>
+                <NRadioGroup
+                  :value="templateDraft"
+                  @update:value="templateDraft = $event"
+                  size="small"
+                  class="ui-radio-cards"
+                >
+                  <NRadio v-for="option in templateOptions" :key="option" :value="option">
+                    <span class="block min-w-0"
+                      ><span class="block font-medium">{{ t(`${prefix}.templates.${option}.name`) }}</span
+                      ><span class="mt-0.5 block text-muted-foreground">{{
+                        t(`${prefix}.templates.${option}.description`)
+                      }}</span></span
+                    >
+                  </NRadio>
+                </NRadioGroup>
+              </div>
+
+              <div>
+                <label class="mb-1 block text-xs font-medium text-muted-foreground">{{
+                  t(`${prefix}.maxImages`)
+                }}</label>
+                <UiNumberInput
+                  :model-value="maxImagesDraft"
+                  @update:model-value="
+                    maxImagesDraft = Math.min(MAX_MAX_IMAGES, Math.max(MIN_MAX_IMAGES, Number($event) || 0))
+                  "
+                  :min="MIN_MAX_IMAGES"
+                  :max="MAX_MAX_IMAGES"
+                  :precision="0"
+                  :show-button="true"
+                  :aria-label="t(`${prefix}.maxImages`)"
+                  class="w-40"
+                />
+                <p class="mt-1 text-xs text-muted-foreground">
+                  {{ t(`${prefix}.maxImagesHint`) }}
+                </p>
+              </div>
+            </template>
+
+            <template v-else-if="activeSection === 'category'">
+              <div>
+                <div class="mb-2 flex items-center justify-between">
+                  <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.categoryOptions`) }}</label>
+                  <UiButton
+                    attr-type="button"
+                    class="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                    @click="restoreCategoryDefaults"
+                  >
+                    <RotateCcw class="h-3 w-3" />
+                    {{ t(`${prefix}.restoreDefaults`) }}
+                  </UiButton>
+                </div>
+                <div class="space-y-2">
+                  <div v-for="(option, index) in categoryDraft" :key="index" class="flex items-center gap-2">
+                    <UiInput
+                      v-model="categoryDraft[index]"
+                      type="text"
+                      class="h-9 flex-1 rounded-lg border border-border/50 bg-surface px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                    />
+                    <UiButton
+                      attr-type="button"
+                      class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/50 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40"
+                      :disabled="categoryDraft.length <= 1"
+                      :aria-label="t(`${prefix}.removeOption`)"
+                      @click="removeCategoryOption(index)"
+                    >
+                      <Trash2 class="h-3.5 w-3.5" />
+                    </UiButton>
+                  </div>
+                </div>
+                <div class="mt-2 flex items-center gap-2">
+                  <UiInput
+                    v-model="newCategoryOption"
+                    type="text"
+                    :placeholder="t(`${prefix}.addOptionPlaceholder`)"
+                    class="h-9 flex-1 rounded-lg border border-dashed border-border/60 bg-surface px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                    @keyup.enter="addCategoryOption"
+                  />
+                  <UiButton
+                    attr-type="button"
+                    class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border/50 px-3 text-xs text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
+                    @click="addCategoryOption"
+                  >
+                    <Plus class="h-3.5 w-3.5" />
+                    {{ t(`${prefix}.addOption`) }}
+                  </UiButton>
+                </div>
+                <p class="mt-2 text-xs text-muted-foreground">
+                  {{ t(`${prefix}.optionsHint`) }}
+                </p>
+              </div>
+            </template>
+
+            <template v-else-if="activeSection === 'priority'">
+              <div>
+                <div class="mb-2 flex items-center justify-between">
+                  <label class="text-xs font-medium text-muted-foreground">{{ t(`${prefix}.priorityOptions`) }}</label>
+                  <UiButton
+                    attr-type="button"
+                    class="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                    @click="restorePriorityDefaults"
+                  >
+                    <RotateCcw class="h-3 w-3" />
+                    {{ t(`${prefix}.restoreDefaults`) }}
+                  </UiButton>
+                </div>
+                <div class="space-y-2">
+                  <div v-for="(option, index) in priorityDraft" :key="index" class="flex items-center gap-2">
+                    <UiInput
+                      v-model="priorityDraft[index]"
+                      type="text"
+                      class="h-9 flex-1 rounded-lg border border-border/50 bg-surface px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                    />
+                    <UiButton
+                      attr-type="button"
+                      class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/50 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40"
+                      :disabled="priorityDraft.length <= 1"
+                      :aria-label="t(`${prefix}.removeOption`)"
+                      @click="removePriorityOption(index)"
+                    >
+                      <Trash2 class="h-3.5 w-3.5" />
+                    </UiButton>
+                  </div>
+                </div>
+                <div class="mt-2 flex items-center gap-2">
+                  <UiInput
+                    v-model="newPriorityOption"
+                    type="text"
+                    :placeholder="t(`${prefix}.addOptionPlaceholder`)"
+                    class="h-9 flex-1 rounded-lg border border-dashed border-border/60 bg-surface px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                    @keyup.enter="addPriorityOption"
+                  />
+                  <UiButton
+                    attr-type="button"
+                    class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border/50 px-3 text-xs text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
+                    @click="addPriorityOption"
+                  >
+                    <Plus class="h-3.5 w-3.5" />
+                    {{ t(`${prefix}.addOption`) }}
+                  </UiButton>
+                </div>
+                <p class="mt-2 text-xs text-muted-foreground">
+                  {{ t(`${prefix}.optionsHint`) }}
+                </p>
+              </div>
+            </template>
+
+            <div
+              v-if="saveSuccessKey"
+              role="status"
+              aria-live="polite"
+              class="flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-600 dark:text-emerald-400"
+            >
+              <Check class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>{{ t(saveSuccessKey) }}</span>
+            </div>
+            <div
+              v-if="saveErrorKey"
+              role="alert"
+              class="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-xs text-red-600 dark:text-red-400"
+            >
+              <AlertCircle class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>{{ t(saveErrorKey) }}</span>
+            </div>
+            <div
+              v-if="rotateErrorKey"
+              role="alert"
+              class="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-xs text-red-600 dark:text-red-400"
+            >
+              <AlertCircle class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>{{ t(rotateErrorKey) }}</span>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 border-t border-border/40 pt-4">
+              <UiButton
+                attr-type="button"
+                class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-red-500/30 px-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-500/10 disabled:opacity-50 dark:text-red-400"
+                :disabled="isRotating"
+                @click="rotateToken"
+              >
+                <Loader2 v-if="isRotating" class="h-3.5 w-3.5 animate-spin" />
+                <RefreshCw v-else class="h-3.5 w-3.5" />
+                {{ t(`${prefix}.rotateToken`) }}
+              </UiButton>
+              <UiButton
+                attr-type="button"
+                class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+                :disabled="isSaving"
+                @click="save"
+              >
+                <Loader2 v-if="isSaving" class="h-3.5 w-3.5 animate-spin" />
+                {{ isSaving ? t(`${prefix}.saving`) : t(`${prefix}.saveTemplate`) }}
+              </UiButton>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </UiModal>
 </template>

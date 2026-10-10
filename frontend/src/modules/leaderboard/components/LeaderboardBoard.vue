@@ -26,15 +26,21 @@ const key = (suffix: string): string => `${props.i18nPrefix}.${suffix}`
 const periods: LeaderboardPeriod[] = ['today', '7d', '30d']
 const podiumRows = computed(() => props.rows.slice(0, 3))
 
-const numberFormatter = computed(() => new Intl.NumberFormat(locale.value, {
-  notation: 'compact',
-  maximumFractionDigits: 1,
-}))
-const currencyFormatter = computed(() => new Intl.NumberFormat(locale.value, {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 2,
-}))
+const numberFormatter = computed(
+  () =>
+    new Intl.NumberFormat(locale.value, {
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }),
+)
+const currencyFormatter = computed(
+  () =>
+    new Intl.NumberFormat(locale.value, {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 2,
+    }),
+)
 
 const formatNumber = (value: number): string => numberFormatter.value.format(value)
 const formatCurrency = (value: number): string => currencyFormatter.value.format(value)
@@ -106,40 +112,38 @@ const formatUpdatedAt = (): string => {
   <section class="w-full text-foreground" :aria-busy="loading" :aria-labelledby="titleId">
     <header class="mb-6 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
       <div class="flex min-w-0 items-start gap-3.5">
-        <span class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+        <span
+          class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm"
+        >
           <Trophy class="h-5 w-5" aria-hidden="true" />
         </span>
         <div class="min-w-0">
-          <p class="mb-1 text-xs font-medium text-primary">{{ t(key('eyebrow')) }}</p>
+          <p class="mb-1 text-xs font-medium text-primary">
+            {{ t(key('eyebrow')) }}
+          </p>
           <h1 :id="titleId" class="text-xl font-semibold leading-tight text-foreground sm:text-2xl">
             {{ t(key('title')) }}
           </h1>
-          <p class="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">{{ t(key('subtitle')) }}</p>
+          <p class="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
+            {{ t(key('subtitle')) }}
+          </p>
         </div>
       </div>
 
       <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-        <div
-          role="group"
-          class="grid h-9 min-w-0 flex-1 grid-cols-3 rounded-lg border border-border bg-surface p-1 sm:flex-none"
+        <UiTabs
+          :value="period"
+          @update:value="emit('update:period', $event)"
           :aria-label="t(key('period.label'))"
+          type="segment"
+          size="small"
+          :animated="false"
+          class="ui-segmented"
         >
-          <button
-            v-for="option in periods"
-            :key="option"
-            type="button"
-            :aria-pressed="period === option"
-            :class="[
-              'h-7 min-w-16 whitespace-nowrap rounded-md px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background',
-              period === option
-                ? 'bg-card text-foreground shadow-sm ring-1 ring-border/70'
-                : 'text-muted-foreground hover:text-foreground',
-            ]"
-            @click="emit('update:period', option)"
-          >
+          <NTab v-for="option in periods" :key="option" :name="option">
             {{ t(key(`period.${option}`)) }}
-          </button>
-        </div>
+          </NTab>
+        </UiTabs>
         <slot name="actions" />
         <Button
           variant="secondary"
@@ -163,22 +167,28 @@ const formatUpdatedAt = (): string => {
         <AlertCircle class="h-5 w-5" aria-hidden="true" />
       </span>
       <div class="min-w-0">
-        <h2 class="text-sm font-semibold text-foreground">{{ t(key('errorTitle')) }}</h2>
-        <p class="mt-1 text-sm leading-6 text-muted-foreground">{{ t(errorKey) }}</p>
+        <h2 class="text-sm font-semibold text-foreground">
+          {{ t(key('errorTitle')) }}
+        </h2>
+        <p class="mt-1 text-sm leading-6 text-muted-foreground">
+          {{ t(errorKey) }}
+        </p>
       </div>
     </div>
 
     <template v-else-if="loading && rows.length === 0">
       <div class="grid grid-cols-2 gap-3 pt-4 md:grid-cols-3 md:gap-5 md:pt-6" aria-hidden="true">
-        <div class="col-span-2 min-h-80 animate-pulse rounded-lg border border-amber-400/40 bg-amber-400/10 md:col-span-1 md:col-start-2 md:row-start-1 md:min-h-[22rem]" />
-        <div class="min-h-72 animate-pulse rounded-lg border border-zinc-300 bg-zinc-400/10 md:col-start-1 md:row-start-1 md:mt-10 md:min-h-[19.5rem] dark:border-zinc-500" />
-        <div class="min-h-72 animate-pulse rounded-lg border border-orange-400/40 bg-orange-400/10 md:col-start-3 md:row-start-1 md:mt-10 md:min-h-[19.5rem]" />
+        <NSkeleton
+          class="col-span-2 min-h-80 rounded-lg md:col-span-1 md:col-start-2 md:row-start-1 md:min-h-[22rem]"
+        />
+        <NSkeleton class="min-h-72 rounded-lg md:col-start-1 md:row-start-1 md:mt-10 md:min-h-[19.5rem]" />
+        <NSkeleton class="min-h-72 rounded-lg md:col-start-3 md:row-start-1 md:mt-10 md:min-h-[19.5rem]" />
       </div>
       <div class="mt-6 overflow-hidden rounded-lg border border-border bg-card shadow-sm" aria-hidden="true">
         <div class="p-5">
-          <div class="h-10 animate-pulse rounded-md bg-surface" />
+          <NSkeleton class="h-10 rounded-md" />
           <div class="mt-4 space-y-2">
-            <div v-for="index in 5" :key="index" class="h-12 animate-pulse rounded-md bg-surface/70" />
+            <NSkeleton v-for="index in 5" :key="index" class="h-12 rounded-md" />
           </div>
         </div>
       </div>
@@ -192,14 +202,13 @@ const formatUpdatedAt = (): string => {
         <Users class="h-5 w-5" aria-hidden="true" />
       </span>
       <h2 class="mt-4 text-base font-semibold">{{ t(key('emptyTitle')) }}</h2>
-      <p class="mt-1.5 max-w-sm text-sm leading-6 text-muted-foreground">{{ t(key('emptyDescription')) }}</p>
+      <p class="mt-1.5 max-w-sm text-sm leading-6 text-muted-foreground">
+        {{ t(key('emptyDescription')) }}
+      </p>
     </div>
 
     <template v-else>
-      <ol
-        class="grid grid-cols-2 gap-3 pt-4 md:grid-cols-3 md:gap-5 md:pt-6"
-        :aria-label="t(key('podiumLabel'))"
-      >
+      <ol class="grid grid-cols-2 gap-3 pt-4 md:grid-cols-3 md:gap-5 md:pt-6" :aria-label="t(key('podiumLabel'))">
         <li
           v-for="row in podiumRows"
           :key="row.userId || row.rank"
@@ -242,51 +251,86 @@ const formatUpdatedAt = (): string => {
                 {{ initials(row) }}
               </span>
 
-              <p class="mt-3 w-full truncate text-sm font-semibold" :title="identity(row)">{{ identity(row) }}</p>
+              <p class="mt-3 w-full truncate text-sm font-semibold" :title="identity(row)">
+                {{ identity(row) }}
+              </p>
               <div class="mt-5">
                 <p class="text-xs font-medium text-muted-foreground">
                   {{ t(key('metrics.tokens')) }}
                 </p>
-                <p :class="['mt-1 font-mono font-semibold leading-none tracking-normal tabular-nums', row.rank === 1 ? 'text-4xl' : 'text-2xl', podiumAccentClass(row.rank)]">
+                <p
+                  :class="[
+                    'mt-1 font-mono font-semibold leading-none tracking-normal tabular-nums',
+                    row.rank === 1 ? 'text-4xl' : 'text-2xl',
+                    podiumAccentClass(row.rank),
+                  ]"
+                >
                   {{ formatNumber(row.totalTokens) }}
                 </p>
               </div>
             </div>
 
-            <dl
-              class="mt-5 grid w-full grid-cols-2 gap-2 border-t border-border/70 pt-4 text-center text-xs"
-            >
+            <dl class="mt-5 grid w-full grid-cols-2 gap-2 border-t border-border/70 pt-4 text-center text-xs">
               <div class="min-w-0">
-                <dt class="text-muted-foreground">{{ t(key('metrics.requests')) }}</dt>
-                <dd class="mt-1 whitespace-nowrap font-mono font-semibold tabular-nums">{{ formatNumber(row.requests) }}</dd>
+                <dt class="text-muted-foreground">
+                  {{ t(key('metrics.requests')) }}
+                </dt>
+                <dd class="mt-1 whitespace-nowrap font-mono font-semibold tabular-nums">
+                  {{ formatNumber(row.requests) }}
+                </dd>
               </div>
               <div class="min-w-0">
-                <dt class="text-muted-foreground">{{ t(key('metrics.cost')) }}</dt>
-                <dd class="mt-1 whitespace-nowrap font-mono font-semibold tabular-nums">{{ formatCurrency(row.actualCost) }}</dd>
+                <dt class="text-muted-foreground">
+                  {{ t(key('metrics.cost')) }}
+                </dt>
+                <dd class="mt-1 whitespace-nowrap font-mono font-semibold tabular-nums">
+                  {{ formatCurrency(row.actualCost) }}
+                </dd>
               </div>
             </dl>
           </div>
         </li>
       </ol>
 
-      <section class="mt-6 overflow-hidden rounded-lg border border-border bg-card shadow-sm" :aria-labelledby="`${titleId}-table`">
-        <div class="flex flex-col gap-1 border-b border-border bg-surface/55 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+      <section
+        class="mt-6 overflow-hidden rounded-lg border border-border bg-card shadow-sm"
+        :aria-labelledby="`${titleId}-table`"
+      >
+        <div
+          class="flex flex-col gap-1 border-b border-border bg-surface/55 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+        >
           <div>
-            <h2 :id="`${titleId}-table`" class="text-sm font-semibold">{{ t(key('table.title')) }}</h2>
-            <p class="mt-0.5 text-xs text-muted-foreground">{{ t(key('table.caption'), { count: rows.length }) }}</p>
+            <h2 :id="`${titleId}-table`" class="text-sm font-semibold">
+              {{ t(key('table.title')) }}
+            </h2>
+            <p class="mt-0.5 text-xs text-muted-foreground">
+              {{ t(key('table.caption'), { count: rows.length }) }}
+            </p>
           </div>
-          <span v-if="updatedAt" class="text-xs text-muted-foreground">{{ t(key('updatedAt'), { time: formatUpdatedAt() }) }}</span>
+          <span v-if="updatedAt" class="text-xs text-muted-foreground">{{
+            t(key('updatedAt'), { time: formatUpdatedAt() })
+          }}</span>
         </div>
 
         <div class="hidden overflow-x-auto md:block">
-          <table class="w-full min-w-[720px] text-left text-sm">
+          <UiTable class="w-full min-w-[720px] text-left text-sm">
             <thead class="bg-card text-xs text-muted-foreground">
               <tr>
-                <th class="w-20 px-5 py-3 font-medium">{{ t(key('table.rank')) }}</th>
-                <th class="px-4 py-3 font-medium">{{ t(key('table.user')) }}</th>
-                <th class="px-4 py-3 text-right font-medium">{{ t(key('metrics.tokens')) }}</th>
-                <th class="px-4 py-3 text-right font-medium">{{ t(key('metrics.requests')) }}</th>
-                <th class="px-5 py-3 text-right font-medium">{{ t(key('metrics.cost')) }}</th>
+                <th class="w-20 px-5 py-3 font-medium">
+                  {{ t(key('table.rank')) }}
+                </th>
+                <th class="px-4 py-3 font-medium">
+                  {{ t(key('table.user')) }}
+                </th>
+                <th class="px-4 py-3 text-right font-medium">
+                  {{ t(key('metrics.tokens')) }}
+                </th>
+                <th class="px-4 py-3 text-right font-medium">
+                  {{ t(key('metrics.requests')) }}
+                </th>
+                <th class="px-5 py-3 text-right font-medium">
+                  {{ t(key('metrics.cost')) }}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -295,45 +339,85 @@ const formatUpdatedAt = (): string => {
                 :key="row.userId || row.rank"
                 class="odd:bg-surface/35 transition-colors hover:bg-primary/5"
               >
-                <td :class="['px-5 py-3.5 font-mono font-semibold tabular-nums', row.rank <= 3 ? podiumAccentClass(row.rank) : 'text-muted-foreground']">
+                <td
+                  :class="[
+                    'px-5 py-3.5 font-mono font-semibold tabular-nums',
+                    row.rank <= 3 ? podiumAccentClass(row.rank) : 'text-muted-foreground',
+                  ]"
+                >
                   {{ rankLabel(row.rank) }}
                 </td>
                 <td class="px-4 py-3.5">
                   <div class="flex items-center gap-3">
-                    <span :class="['flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-xs font-semibold', row.rank <= 3 ? podiumTableAvatarClass(row.rank) : 'bg-surface text-foreground']">
+                    <span
+                      :class="[
+                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-xs font-semibold',
+                        row.rank <= 3 ? podiumTableAvatarClass(row.rank) : 'bg-surface text-foreground',
+                      ]"
+                    >
                       {{ initials(row) }}
                     </span>
-                    <span class="min-w-0 truncate font-medium text-foreground" :title="identity(row)">{{ identity(row) }}</span>
+                    <span class="min-w-0 truncate font-medium text-foreground" :title="identity(row)">{{
+                      identity(row)
+                    }}</span>
                   </div>
                 </td>
-                <td class="px-4 py-3.5 text-right font-mono font-semibold tabular-nums text-primary">{{ formatNumber(row.totalTokens) }}</td>
-                <td class="px-4 py-3.5 text-right font-mono tabular-nums text-muted-foreground">{{ formatNumber(row.requests) }}</td>
-                <td class="px-5 py-3.5 text-right font-mono font-medium tabular-nums text-foreground">{{ formatCurrency(row.actualCost) }}</td>
+                <td class="px-4 py-3.5 text-right font-mono font-semibold tabular-nums text-primary">
+                  {{ formatNumber(row.totalTokens) }}
+                </td>
+                <td class="px-4 py-3.5 text-right font-mono tabular-nums text-muted-foreground">
+                  {{ formatNumber(row.requests) }}
+                </td>
+                <td class="px-5 py-3.5 text-right font-mono font-medium tabular-nums text-foreground">
+                  {{ formatCurrency(row.actualCost) }}
+                </td>
               </tr>
             </tbody>
-          </table>
+          </UiTable>
         </div>
 
         <ol class="md:hidden">
           <li v-for="row in rows" :key="row.userId || row.rank" class="odd:bg-surface/35 p-4">
             <div class="flex items-center gap-3">
-              <span :class="['w-7 shrink-0 font-mono text-sm font-semibold tabular-nums', row.rank <= 3 ? podiumAccentClass(row.rank) : 'text-muted-foreground']">
+              <span
+                :class="[
+                  'w-7 shrink-0 font-mono text-sm font-semibold tabular-nums',
+                  row.rank <= 3 ? podiumAccentClass(row.rank) : 'text-muted-foreground',
+                ]"
+              >
                 {{ rankLabel(row.rank) }}
               </span>
-              <span :class="['flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-xs font-semibold', row.rank <= 3 ? podiumTableAvatarClass(row.rank) : 'bg-surface text-foreground']">
+              <span
+                :class="[
+                  'flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-xs font-semibold',
+                  row.rank <= 3 ? podiumTableAvatarClass(row.rank) : 'bg-surface text-foreground',
+                ]"
+              >
                 {{ initials(row) }}
               </span>
-              <span class="min-w-0 flex-1 truncate text-sm font-medium" :title="identity(row)">{{ identity(row) }}</span>
-              <span class="font-mono text-sm font-semibold tabular-nums text-primary">{{ formatNumber(row.totalTokens) }}</span>
+              <span class="min-w-0 flex-1 truncate text-sm font-medium" :title="identity(row)">{{
+                identity(row)
+              }}</span>
+              <span class="font-mono text-sm font-semibold tabular-nums text-primary">{{
+                formatNumber(row.totalTokens)
+              }}</span>
             </div>
             <dl class="mt-3 grid grid-cols-2 gap-3 pl-10 text-xs">
               <div class="flex items-center justify-between gap-2">
-                <dt class="text-muted-foreground">{{ t(key('metrics.requests')) }}</dt>
-                <dd class="font-mono font-medium tabular-nums">{{ formatNumber(row.requests) }}</dd>
+                <dt class="text-muted-foreground">
+                  {{ t(key('metrics.requests')) }}
+                </dt>
+                <dd class="font-mono font-medium tabular-nums">
+                  {{ formatNumber(row.requests) }}
+                </dd>
               </div>
               <div class="flex items-center justify-between gap-2">
-                <dt class="text-muted-foreground">{{ t(key('metrics.cost')) }}</dt>
-                <dd class="font-mono font-medium tabular-nums">{{ formatCurrency(row.actualCost) }}</dd>
+                <dt class="text-muted-foreground">
+                  {{ t(key('metrics.cost')) }}
+                </dt>
+                <dd class="font-mono font-medium tabular-nums">
+                  {{ formatCurrency(row.actualCost) }}
+                </dd>
               </div>
             </dl>
           </li>

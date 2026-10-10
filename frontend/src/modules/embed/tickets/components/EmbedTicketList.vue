@@ -100,8 +100,8 @@ const emptyCardClass = computed(() => {
     <div class="space-y-3">
       <h2 :class="titleClass">{{ t('embed.tickets.list.title') }}</h2>
       <div class="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
+        <UiButton
+          attr-type="button"
           class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border/50 px-3 text-sm text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground disabled:opacity-50"
           :disabled="props.isLoading"
           @click="emit('refresh')"
@@ -109,19 +109,22 @@ const emptyCardClass = computed(() => {
           <Loader2 v-if="props.isLoading" class="h-3.5 w-3.5 animate-spin" />
           <RefreshCw v-else class="h-3.5 w-3.5" />
           {{ t('embed.tickets.list.refresh') }}
-        </button>
-        <button
-          type="button"
+        </UiButton>
+        <UiButton
+          attr-type="button"
           class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           @click="isCreateModalOpen = true"
         >
           <Plus class="h-3.5 w-3.5" />
           {{ t('embed.tickets.list.create') }}
-        </button>
+        </UiButton>
       </div>
     </div>
 
-    <div v-if="errorKey" class="flex items-start gap-2 rounded-lg border border-warning/20 bg-warning/10 p-3 text-xs text-warning">
+    <div
+      v-if="errorKey"
+      class="flex items-start gap-2 rounded-lg border border-warning/20 bg-warning/10 p-3 text-xs text-warning"
+    >
       <AlertCircle class="mt-0.5 h-3.5 w-3.5 shrink-0" />
       <span>{{ t(errorKey) }}</span>
     </div>
@@ -132,7 +135,9 @@ const emptyCardClass = computed(() => {
     </div>
 
     <div v-else-if="tickets.length === 0" :class="emptyCardClass">
-      <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-border/50 bg-surface-elevated text-muted-foreground">
+      <div
+        class="flex h-12 w-12 items-center justify-center rounded-2xl border border-border/50 bg-surface-elevated text-muted-foreground"
+      >
         <Inbox class="h-5 w-5" />
       </div>
       <h3 class="mt-4 font-semibold text-foreground">{{ t('embed.tickets.list.emptyTitle') }}</h3>
@@ -140,28 +145,37 @@ const emptyCardClass = computed(() => {
     </div>
 
     <div v-else :class="listContainerClass">
-      <button
+      <UiButton
         v-for="ticket in tickets"
         :key="ticket.id"
-        type="button"
+        attr-type="button"
         :class="itemClass"
         @click="emit('select', ticket.id)"
       >
         <div class="flex items-start justify-between gap-3">
           <p class="text-sm font-medium text-foreground">{{ ticket.title }}</p>
-          <span :class="['inline-flex shrink-0 rounded-md border px-2 py-0.5 text-xs font-semibold', statusBadgeClass(ticket.status)]">
+          <span
+            :class="[
+              'inline-flex shrink-0 rounded-md border px-2 py-0.5 text-xs font-semibold',
+              statusBadgeClass(ticket.status),
+            ]"
+          >
             {{ t(`embed.tickets.status.${ticket.status}`) }}
           </span>
         </div>
         <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <span class="inline-flex items-center rounded-md border border-border/50 bg-surface-elevated px-1.5 py-0.5">{{ ticket.category }}</span>
-          <span class="inline-flex items-center rounded-md border border-border/50 bg-surface-elevated px-1.5 py-0.5">{{ ticket.priority }}</span>
+          <span class="inline-flex items-center rounded-md border border-border/50 bg-surface-elevated px-1.5 py-0.5">{{
+            ticket.category
+          }}</span>
+          <span class="inline-flex items-center rounded-md border border-border/50 bg-surface-elevated px-1.5 py-0.5">{{
+            ticket.priority
+          }}</span>
         </div>
         <div class="flex items-center justify-between text-xs text-muted-foreground">
           <span class="truncate">{{ ticket.manualEmail }}</span>
           <span class="shrink-0">{{ formatDateTime(ticket.lastMessageAt) }}</span>
         </div>
-      </button>
+      </UiButton>
     </div>
 
     <EmbedTicketCreateModal

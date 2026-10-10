@@ -21,6 +21,8 @@ const isDark = useDark({
   attribute: 'class',
   valueDark: 'dark',
   valueLight: '',
+  initialValue: 'dark',
+  storageKey: 'transithub-color-scheme',
 })
 const toggleDark = useToggle(isDark)
 const toggleLocale = () => {
@@ -228,16 +230,31 @@ const handleAddSubmit = async (form: DashboardAdminLoginForm) => {
       </div>
 
       <div class="flex items-center gap-2">
-        <button @click="toggleLocale" class="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" :title="t('admin.layout.toggleLanguage')" :aria-label="t('admin.layout.toggleLanguage')">
+        <UiButton
+          @click="toggleLocale"
+          class="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          :title="t('admin.layout.toggleLanguage')"
+          :aria-label="t('admin.layout.toggleLanguage')"
+        >
           <Globe class="h-4 w-4" />
-        </button>
-        <button @click="toggleDark()" class="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" :title="t('admin.layout.toggleTheme')" :aria-label="t('admin.layout.toggleTheme')">
+        </UiButton>
+        <UiButton
+          @click="toggleDark()"
+          class="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          :title="t('admin.layout.toggleTheme')"
+          :aria-label="t('admin.layout.toggleTheme')"
+        >
           <Moon v-if="!isDark" class="h-4 w-4" />
           <Sun v-else class="h-4 w-4" />
-        </button>
-        <button @click="handleLogout" class="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" :title="t('admin.menu.signOut')" :aria-label="t('admin.menu.signOut')">
+        </UiButton>
+        <UiButton
+          @click="handleLogout"
+          class="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          :title="t('admin.menu.signOut')"
+          :aria-label="t('admin.menu.signOut')"
+        >
           <LogOut class="h-4 w-4" />
-        </button>
+        </UiButton>
       </div>
     </header>
 
@@ -249,7 +266,10 @@ const handleAddSubmit = async (form: DashboardAdminLoginForm) => {
           <p class="mt-2 text-sm text-muted-foreground">{{ t('admin.adminAccounts.subtitle') }}</p>
         </div>
 
-        <div v-if="errorKey" class="mb-6 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+        <div
+          v-if="errorKey"
+          class="mb-6 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive"
+        >
           {{ t(errorKey) }}
         </div>
 
@@ -270,15 +290,18 @@ const handleAddSubmit = async (form: DashboardAdminLoginForm) => {
             :class="[
               account.current
                 ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
-                : 'border-border/60 bg-surface-elevated hover:border-primary/40'
+                : 'border-border/60 bg-surface-elevated hover:border-primary/40',
             ]"
           >
-            <div v-if="account.current" class="absolute top-3 right-14 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <div
+              v-if="account.current"
+              class="absolute top-3 right-14 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground"
+            >
               <Check class="h-3.5 w-3.5" />
             </div>
 
-            <button
-              type="button"
+            <UiButton
+              attr-type="button"
               class="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive disabled:pointer-events-none disabled:opacity-50"
               :aria-label="t('admin.adminAccounts.delete.actionLabel', { name: account.displayName })"
               :title="t('admin.adminAccounts.delete.actionLabel', { name: account.displayName })"
@@ -286,16 +309,18 @@ const handleAddSubmit = async (form: DashboardAdminLoginForm) => {
               @click.stop="openDeleteModal(account)"
             >
               <Trash2 class="h-4 w-4" />
-            </button>
+            </UiButton>
 
-            <button
-              type="button"
+            <UiButton
+              attr-type="button"
               :disabled="isSwitching || isDeleting"
               @click="switchAccount(account.id)"
               class="flex min-h-[160px] w-full flex-col gap-3 p-5 pr-24 text-left transition-all disabled:opacity-50"
             >
               <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 border border-primary/20">
+                <div
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 border border-primary/20"
+                >
                   <Globe class="h-5 w-5 text-primary" />
                 </div>
                 <div class="min-w-0">
@@ -319,17 +344,14 @@ const handleAddSubmit = async (form: DashboardAdminLoginForm) => {
                 </div>
               </div>
 
-              <div
-                v-if="account.current"
-                class="mt-1 text-xs font-medium text-primary"
-              >
+              <div v-if="account.current" class="mt-1 text-xs font-medium text-primary">
                 {{ t('admin.adminAccounts.currentLabel') }}
               </div>
-            </button>
+            </UiButton>
           </div>
 
           <!-- 添加工作区卡片 -->
-          <button
+          <UiButton
             @click="openAddModal"
             class="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border/60 p-5 text-center transition-all hover:border-primary/40 hover:bg-primary/5 hover:shadow-lg min-h-[160px]"
           >
@@ -340,7 +362,7 @@ const handleAddSubmit = async (form: DashboardAdminLoginForm) => {
               <div class="text-sm font-medium text-foreground">{{ t('admin.adminAccounts.addWorkspace') }}</div>
               <div class="mt-1 text-xs text-muted-foreground">{{ t('admin.adminAccounts.addWorkspaceHint') }}</div>
             </div>
-          </button>
+          </UiButton>
         </div>
 
         <!-- 空状态提示 -->
@@ -359,94 +381,102 @@ const handleAddSubmit = async (form: DashboardAdminLoginForm) => {
       @close="closeAddModal"
     />
 
-    <Teleport defer to="body">
-      <div
-        v-if="deleteTarget"
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4"
-        @keydown.esc.prevent.stop="handleDeleteDialogEscape"
+    <UiModal
+      v-if="deleteTarget"
+      :show="Boolean(deleteTarget)"
+      :z-index="100"
+      @mask-click="closeDeleteModal"
+      @esc="closeDeleteModal"
+      @keydown.esc.prevent.stop="handleDeleteDialogEscape"
+    >
+      <form
+        role="alertdialog"
+        aria-modal="true"
+        :aria-labelledby="deleteTitleId"
+        :aria-describedby="deleteDescriptionId"
+        class="relative w-full max-w-lg overflow-hidden rounded-2xl border border-border/70 bg-card text-card-foreground shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        @submit.prevent="submitDeleteWorkspace"
       >
-        <div class="absolute inset-0 bg-background/80 backdrop-blur-sm" @click="closeDeleteModal" />
+        <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-destructive via-warning to-destructive" />
 
-        <form
-          role="alertdialog"
-          aria-modal="true"
-          :aria-labelledby="deleteTitleId"
-          :aria-describedby="deleteDescriptionId"
-          class="relative w-full max-w-lg overflow-hidden rounded-2xl border border-border/70 bg-card text-card-foreground shadow-2xl animate-in fade-in zoom-in-95 duration-200"
-          @submit.prevent="submitDeleteWorkspace"
-        >
-          <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-destructive via-warning to-destructive" />
-
-          <div class="p-6">
-            <div class="flex items-start gap-4">
-              <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-destructive/30 bg-destructive/10 text-destructive">
-                <Trash2 class="h-5 w-5" />
+        <div class="p-6">
+          <div class="flex items-start gap-4">
+            <div
+              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-destructive/30 bg-destructive/10 text-destructive"
+            >
+              <Trash2 class="h-5 w-5" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <h3 :id="deleteTitleId" class="text-lg font-semibold text-foreground">
+                {{ t('admin.adminAccounts.delete.title', { name: deleteTarget.displayName }) }}
+              </h3>
+              <div :id="deleteDescriptionId" class="mt-2 space-y-2 text-sm leading-6 text-muted-foreground">
+                <p>{{ t('admin.adminAccounts.delete.localDataWarning') }}</p>
+                <p>{{ t('admin.adminAccounts.delete.remoteResourcesRetained') }}</p>
+                <p>
+                  {{ t('admin.adminAccounts.delete.phraseInstruction', { phrase: WORKSPACE_DELETE_CONFIRMATION }) }}
+                </p>
               </div>
-              <div class="min-w-0 flex-1">
-                <h3 :id="deleteTitleId" class="text-lg font-semibold text-foreground">
-                  {{ t('admin.adminAccounts.delete.title', { name: deleteTarget.displayName }) }}
-                </h3>
-                <div :id="deleteDescriptionId" class="mt-2 space-y-2 text-sm leading-6 text-muted-foreground">
-                  <p>{{ t('admin.adminAccounts.delete.localDataWarning') }}</p>
-                  <p>{{ t('admin.adminAccounts.delete.remoteResourcesRetained') }}</p>
-                  <p>{{ t('admin.adminAccounts.delete.phraseInstruction', { phrase: WORKSPACE_DELETE_CONFIRMATION }) }}</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-5 rounded-xl border border-border/70 bg-muted/40 px-4 py-3 font-mono text-sm font-semibold tracking-wide text-foreground select-none">
-              {{ WORKSPACE_DELETE_CONFIRMATION }}
-            </div>
-
-            <label class="mt-5 block text-sm font-medium text-foreground" for="workspace-delete-confirmation">
-              {{ t('admin.adminAccounts.delete.inputLabel') }}
-            </label>
-            <input
-              id="workspace-delete-confirmation"
-              :value="deleteConfirmation"
-              type="text"
-              class="mt-2 h-11 w-full rounded-xl border border-border/70 bg-surface px-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-destructive focus:ring-2 focus:ring-destructive/20 disabled:opacity-50"
-              :placeholder="t('admin.adminAccounts.delete.inputPlaceholder')"
-              autocomplete="off"
-              autocorrect="off"
-              autocapitalize="off"
-              :spellcheck="false"
-              :disabled="isDeleting"
-              @keydown="handleDeleteConfirmationKeydown"
-              @beforeinput="handleDeleteConfirmationBeforeInput"
-              @input="handleDeleteConfirmationInput"
-              @paste="resetBlockedConfirmation"
-              @drop="resetBlockedConfirmation"
-              @dragover.prevent
-              @contextmenu.prevent
-            />
-
-            <div v-if="deleteErrorKey" class="mt-5 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              <AlertTriangle class="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{{ t(deleteErrorKey) }}</span>
-            </div>
-
-            <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                class="inline-flex h-10 items-center justify-center rounded-xl bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-surface-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50"
-                :disabled="isDeleting"
-                @click="closeDeleteModal"
-              >
-                {{ t('admin.adminAccounts.delete.cancel') }}
-              </button>
-              <button
-                type="submit"
-                class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive disabled:pointer-events-none disabled:opacity-50"
-                :disabled="!canDeleteWorkspace"
-              >
-                <Loader2 v-if="isDeleting" class="h-4 w-4 animate-spin" />
-                {{ t(isDeleting ? 'admin.adminAccounts.delete.deleting' : 'admin.adminAccounts.delete.confirm') }}
-              </button>
             </div>
           </div>
-        </form>
-      </div>
-    </Teleport>
+
+          <div
+            class="mt-5 rounded-xl border border-border/70 bg-muted/40 px-4 py-3 font-mono text-sm font-semibold tracking-wide text-foreground select-none"
+          >
+            {{ WORKSPACE_DELETE_CONFIRMATION }}
+          </div>
+
+          <label class="mt-5 block text-sm font-medium text-foreground" for="workspace-delete-confirmation">
+            {{ t('admin.adminAccounts.delete.inputLabel') }}
+          </label>
+          <UiInput
+            id="workspace-delete-confirmation"
+            :value="deleteConfirmation"
+            type="text"
+            class="mt-2 h-11 w-full rounded-xl border border-border/70 bg-surface px-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-destructive focus:ring-2 focus:ring-destructive/20 disabled:opacity-50"
+            :placeholder="t('admin.adminAccounts.delete.inputPlaceholder')"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            :spellcheck="false"
+            :disabled="isDeleting"
+            @keydown="handleDeleteConfirmationKeydown"
+            @beforeinput="handleDeleteConfirmationBeforeInput"
+            @input="handleDeleteConfirmationInput"
+            @paste="resetBlockedConfirmation"
+            @drop="resetBlockedConfirmation"
+            @dragover.prevent
+            @contextmenu.prevent
+          />
+
+          <div
+            v-if="deleteErrorKey"
+            class="mt-5 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            <AlertTriangle class="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{{ t(deleteErrorKey) }}</span>
+          </div>
+
+          <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <UiButton
+              attr-type="button"
+              class="inline-flex h-10 items-center justify-center rounded-xl bg-secondary px-4 py-2 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-surface-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50"
+              :disabled="isDeleting"
+              @click="closeDeleteModal"
+            >
+              {{ t('admin.adminAccounts.delete.cancel') }}
+            </UiButton>
+            <UiButton
+              attr-type="submit"
+              class="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive disabled:pointer-events-none disabled:opacity-50"
+              :disabled="!canDeleteWorkspace"
+            >
+              <Loader2 v-if="isDeleting" class="h-4 w-4 animate-spin" />
+              {{ t(isDeleting ? 'admin.adminAccounts.delete.deleting' : 'admin.adminAccounts.delete.confirm') }}
+            </UiButton>
+          </div>
+        </div>
+      </form>
+    </UiModal>
   </div>
 </template>

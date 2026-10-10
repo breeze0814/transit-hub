@@ -1,7 +1,20 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Plus, Save, Loader2, CheckCircle2, MessageSquare, Send, Trash2, Timer, AlertTriangle, TrendingUp, Info, Mail } from 'lucide-vue-next'
+import {
+  Plus,
+  Save,
+  Loader2,
+  CheckCircle2,
+  MessageSquare,
+  Send,
+  Trash2,
+  Timer,
+  AlertTriangle,
+  TrendingUp,
+  Info,
+  Mail,
+} from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import EmailTemplatesPanel from '../components/settings/EmailTemplatesPanel.vue'
@@ -16,7 +29,15 @@ import {
   testNotificationChannel,
   testSmtpEmail,
 } from '../api/settings'
-import type { NotificationChannel, NotificationChannelSettings, NotificationTemplateFormat, SmtpSettings, SmtpTlsMode, StrategySettings, TestNotificationChannelPayload } from '../types/settings'
+import type {
+  NotificationChannel,
+  NotificationChannelSettings,
+  NotificationTemplateFormat,
+  SmtpSettings,
+  SmtpTlsMode,
+  StrategySettings,
+  TestNotificationChannelPayload,
+} from '../types/settings'
 
 const { t } = useI18n()
 
@@ -42,31 +63,39 @@ const minimumRefreshInterval = 60
 const enableBalanceWarning = ref(false)
 const defaultBalanceThreshold = ref('10.00')
 const balanceSelectedBots = ref<string[]>([])
-const defaultBalanceTemplate = computed(() => t('admin.settings.sections.templates.balanceDefaultTemplate', {
-  siteName: '{siteName}',
-  balance: '{balance}',
-  threshold: '{threshold}',
-}))
-const defaultMultiplierTemplate = computed(() => t('admin.settings.sections.templates.multiplierDefaultTemplate', {
-  siteName: '{siteName}',
-  groupName: '{groupName}',
-  oldRate: '{oldRate}',
-  newRate: '{newRate}',
-  changeDirection: '{changeDirection}',
-}))
+const defaultBalanceTemplate = computed(() =>
+  t('admin.settings.sections.templates.balanceDefaultTemplate', {
+    siteName: '{siteName}',
+    balance: '{balance}',
+    threshold: '{threshold}',
+  }),
+)
+const defaultMultiplierTemplate = computed(() =>
+  t('admin.settings.sections.templates.multiplierDefaultTemplate', {
+    siteName: '{siteName}',
+    groupName: '{groupName}',
+    oldRate: '{oldRate}',
+    newRate: '{newRate}',
+    changeDirection: '{changeDirection}',
+  }),
+)
 const normalizeBuiltInTemplate = (template?: string) => (template?.trim() ?? '').replace(/>\s+</g, '><')
-const legacyBalanceTemplates = new Set([
-  '【余额预警】{siteName} 站点余额（CNY）已不足 {threshold} 元，当前余额为 {balance} 元。',
-  '[Balance warning] {siteName} balance (CNY) is below {threshold}; current balance is {balance}.',
-  '<div style="border-left:4px solid #f59e0b;background:rgba(245,158,11,0.12);padding:16px;border-radius:6px"><div style="font-size:18px;font-weight:700;color:#f59e0b">🔴 余额预警</div><p style="margin:10px 0 0">上游站点 <strong style="color:#3b82f6">{siteName}</strong> 的可用余额已低于预警阈值。</p><p style="margin:10px 0 0">💰 当前余额: <strong style="color:#ef4444">¥{balance}</strong><br>⚠️ 预警阈值: <strong>¥{threshold}</strong></p><p style="margin:10px 0 0">请及时检查并充值，避免服务中断。</p></div>',
-  '<div style="border-left:4px solid #f59e0b;background:rgba(245,158,11,0.12);padding:16px;border-radius:6px"><div style="font-size:18px;font-weight:700;color:#f59e0b">🔴 Balance warning</div><p style="margin:10px 0 0">The available balance for <strong style="color:#3b82f6">{siteName}</strong> is below the warning threshold.</p><p style="margin:10px 0 0">💰 Current balance: <strong style="color:#ef4444">¥{balance}</strong><br>⚠️ Warning threshold: <strong>¥{threshold}</strong></p><p style="margin:10px 0 0">Please review and recharge the upstream account to avoid service interruption.</p></div>',
-].map(normalizeBuiltInTemplate))
-const legacyMultiplierTemplates = new Set([
-  '【倍率变更】{siteName} 的 {groupName} 分组倍率已{changeDirection}：{oldRate}x -> {newRate}x。',
-  '[Multiplier change] {siteName} / {groupName} {changeDirection}: {oldRate}x -> {newRate}x.',
-  '<div style="border-left:4px solid #3b82f6;background:rgba(59,130,246,0.12);padding:16px;border-radius:6px"><div style="font-size:18px;font-weight:700;color:#3b82f6">🟠 倍率变更预警</div><p style="margin:10px 0 0">上游站点 <strong style="color:#3b82f6">{siteName}</strong> 的分组 <strong style="color:#8b5cf6">{groupName}</strong> 倍率已<strong style="color:#f59e0b">{changeDirection}</strong>。</p><p style="margin:10px 0 0">▫️ 原倍率: <strong>{oldRate}x</strong><br>🔸 新倍率: <strong style="color:#f59e0b">{newRate}x</strong></p><p style="margin:10px 0 0">🔎 请确认成本变化，并检查下游定价策略。</p></div>',
-  '<div style="border-left:4px solid #3b82f6;background:rgba(59,130,246,0.12);padding:16px;border-radius:6px"><div style="font-size:18px;font-weight:700;color:#3b82f6">🟠 Multiplier change warning</div><p style="margin:10px 0 0">The <strong style="color:#8b5cf6">{groupName}</strong> multiplier on <strong style="color:#3b82f6">{siteName}</strong> has <strong style="color:#f59e0b">{changeDirection}</strong>.</p><p style="margin:10px 0 0">▫️ Previous rate: <strong>{oldRate}x</strong><br>🔸 New rate: <strong style="color:#f59e0b">{newRate}x</strong></p><p style="margin:10px 0 0">🔎 Review the cost change and confirm whether downstream pricing needs adjustment.</p></div>',
-].map(normalizeBuiltInTemplate))
+const legacyBalanceTemplates = new Set(
+  [
+    '【余额预警】{siteName} 站点余额（CNY）已不足 {threshold} 元，当前余额为 {balance} 元。',
+    '[Balance warning] {siteName} balance (CNY) is below {threshold}; current balance is {balance}.',
+    '<div style="border-left:4px solid #f59e0b;background:rgba(245,158,11,0.12);padding:16px;border-radius:6px"><div style="font-size:18px;font-weight:700;color:#f59e0b">🔴 余额预警</div><p style="margin:10px 0 0">上游站点 <strong style="color:#3b82f6">{siteName}</strong> 的可用余额已低于预警阈值。</p><p style="margin:10px 0 0">💰 当前余额: <strong style="color:#ef4444">¥{balance}</strong><br>⚠️ 预警阈值: <strong>¥{threshold}</strong></p><p style="margin:10px 0 0">请及时检查并充值，避免服务中断。</p></div>',
+    '<div style="border-left:4px solid #f59e0b;background:rgba(245,158,11,0.12);padding:16px;border-radius:6px"><div style="font-size:18px;font-weight:700;color:#f59e0b">🔴 Balance warning</div><p style="margin:10px 0 0">The available balance for <strong style="color:#3b82f6">{siteName}</strong> is below the warning threshold.</p><p style="margin:10px 0 0">💰 Current balance: <strong style="color:#ef4444">¥{balance}</strong><br>⚠️ Warning threshold: <strong>¥{threshold}</strong></p><p style="margin:10px 0 0">Please review and recharge the upstream account to avoid service interruption.</p></div>',
+  ].map(normalizeBuiltInTemplate),
+)
+const legacyMultiplierTemplates = new Set(
+  [
+    '【倍率变更】{siteName} 的 {groupName} 分组倍率已{changeDirection}：{oldRate}x -> {newRate}x。',
+    '[Multiplier change] {siteName} / {groupName} {changeDirection}: {oldRate}x -> {newRate}x.',
+    '<div style="border-left:4px solid #3b82f6;background:rgba(59,130,246,0.12);padding:16px;border-radius:6px"><div style="font-size:18px;font-weight:700;color:#3b82f6">🟠 倍率变更预警</div><p style="margin:10px 0 0">上游站点 <strong style="color:#3b82f6">{siteName}</strong> 的分组 <strong style="color:#8b5cf6">{groupName}</strong> 倍率已<strong style="color:#f59e0b">{changeDirection}</strong>。</p><p style="margin:10px 0 0">▫️ 原倍率: <strong>{oldRate}x</strong><br>🔸 新倍率: <strong style="color:#f59e0b">{newRate}x</strong></p><p style="margin:10px 0 0">🔎 请确认成本变化，并检查下游定价策略。</p></div>',
+    '<div style="border-left:4px solid #3b82f6;background:rgba(59,130,246,0.12);padding:16px;border-radius:6px"><div style="font-size:18px;font-weight:700;color:#3b82f6">🟠 Multiplier change warning</div><p style="margin:10px 0 0">The <strong style="color:#8b5cf6">{groupName}</strong> multiplier on <strong style="color:#3b82f6">{siteName}</strong> has <strong style="color:#f59e0b">{changeDirection}</strong>.</p><p style="margin:10px 0 0">▫️ Previous rate: <strong>{oldRate}x</strong><br>🔸 New rate: <strong style="color:#f59e0b">{newRate}x</strong></p><p style="margin:10px 0 0">🔎 Review the cost change and confirm whether downstream pricing needs adjustment.</p></div>',
+  ].map(normalizeBuiltInTemplate),
+)
 const shouldUseDefaultTemplate = (template: string | undefined, legacyTemplates: ReadonlySet<string>) => {
   const normalized = normalizeBuiltInTemplate(template)
   return normalized === '' || legacyTemplates.has(normalized)
@@ -79,9 +108,8 @@ const multiplierSelectedBots = ref<string[]>([])
 const multiplierTemplate = ref(defaultMultiplierTemplate.value)
 const multiplierTemplateFormat = ref<NotificationTemplateFormat>('markdown')
 
-const normalizeTemplateFormat = (format?: string): NotificationTemplateFormat => (
+const normalizeTemplateFormat = (format?: string): NotificationTemplateFormat =>
   format === 'markdown' || format === 'html' ? format : 'text'
-)
 
 const balanceTemplateVariables = computed(() => [
   { token: '{siteName}', label: t('admin.settings.varSiteName') },
@@ -141,11 +169,38 @@ const feishuBots = ref<WebhookBotForm[]>([])
 const telegramBots = ref<TelegramBotForm[]>([])
 
 const addBot = (type: NotificationChannel) => {
-  if (type === 'dingtalk') dingtalkBots.value.push({ id: uniqueId(), name: '', webhook: '', secret: '' })
+  if (type === 'dingtalk')
+    dingtalkBots.value.push({
+      id: uniqueId(),
+      name: '',
+      webhook: '',
+      secret: '',
+    })
   if (type === 'wecom') wecomBots.value.push({ id: uniqueId(), name: '', webhook: '', secret: '' })
-  if (type === 'qq') qqBots.value.push({ id: uniqueId(), name: '', appId: '', clientSecret: '', userOpenId: '', groupOpenId: '' })
-  if (type === 'feishu') feishuBots.value.push({ id: uniqueId(), name: '', webhook: '', secret: '' })
-  if (type === 'telegram') telegramBots.value.push({ id: uniqueId(), name: '', botToken: '', chatId: '', proxyUrl: '' })
+  if (type === 'qq')
+    qqBots.value.push({
+      id: uniqueId(),
+      name: '',
+      appId: '',
+      clientSecret: '',
+      userOpenId: '',
+      groupOpenId: '',
+    })
+  if (type === 'feishu')
+    feishuBots.value.push({
+      id: uniqueId(),
+      name: '',
+      webhook: '',
+      secret: '',
+    })
+  if (type === 'telegram')
+    telegramBots.value.push({
+      id: uniqueId(),
+      name: '',
+      botToken: '',
+      chatId: '',
+      proxyUrl: '',
+    })
 }
 
 const removeBot = (type: NotificationChannel, index: number) => {
@@ -164,7 +219,9 @@ const saveStrategy = async () => {
   try {
     applyStrategySettings(await saveStrategySettings(currentStrategySettings()))
     showSuccessStrategy.value = true
-    setTimeout(() => { showSuccessStrategy.value = false }, 3000)
+    setTimeout(() => {
+      showSuccessStrategy.value = false
+    }, 3000)
   } catch (error) {
     errorStrategy.value = error instanceof Error ? error.message : 'admin.settings.errors.unknown'
   } finally {
@@ -180,17 +237,26 @@ const applyStrategySettings = (settings: StrategySettings) => {
   balanceSelectedBots.value = settings.balanceNotifyBotIds ?? []
   const usesDefaultBalanceTemplate = shouldUseDefaultTemplate(settings.balanceTemplate, legacyBalanceTemplates)
   balanceTemplate.value = usesDefaultBalanceTemplate ? defaultBalanceTemplate.value : settings.balanceTemplate
-  balanceTemplateFormat.value = usesDefaultBalanceTemplate ? 'markdown' : normalizeTemplateFormat(settings.balanceTemplateFormat)
+  balanceTemplateFormat.value = usesDefaultBalanceTemplate
+    ? 'markdown'
+    : normalizeTemplateFormat(settings.balanceTemplateFormat)
   enableMultiplierAlert.value = settings.enableMultiplierAlert
   multiplierSelectedBots.value = settings.multiplierNotifyBotIds ?? []
   const usesDefaultMultiplierTemplate = shouldUseDefaultTemplate(settings.multiplierTemplate, legacyMultiplierTemplates)
-  multiplierTemplate.value = usesDefaultMultiplierTemplate ? defaultMultiplierTemplate.value : settings.multiplierTemplate
-  multiplierTemplateFormat.value = usesDefaultMultiplierTemplate ? 'markdown' : normalizeTemplateFormat(settings.multiplierTemplateFormat)
+  multiplierTemplate.value = usesDefaultMultiplierTemplate
+    ? defaultMultiplierTemplate.value
+    : settings.multiplierTemplate
+  multiplierTemplateFormat.value = usesDefaultMultiplierTemplate
+    ? 'markdown'
+    : normalizeTemplateFormat(settings.multiplierTemplateFormat)
 }
 
 const currentStrategySettings = (): StrategySettings => ({
   enableRefreshInterval: enableRefreshInterval.value,
-  refreshInterval: Math.max(Number.parseInt(refreshInterval.value, 10) || minimumRefreshInterval, minimumRefreshInterval),
+  refreshInterval: Math.max(
+    Number.parseInt(refreshInterval.value, 10) || minimumRefreshInterval,
+    minimumRefreshInterval,
+  ),
   enableBalanceWarning: enableBalanceWarning.value,
   defaultBalanceThreshold: Number.parseFloat(defaultBalanceThreshold.value) || 10,
   balanceNotifyBotIds: balanceSelectedBots.value,
@@ -223,7 +289,9 @@ const saveChannels = async () => {
   try {
     applyNotificationChannelSettings(await saveNotificationChannelSettings(currentNotificationChannelSettings()))
     showSuccessChannels.value = true
-    setTimeout(() => { showSuccessChannels.value = false }, 3000)
+    setTimeout(() => {
+      showSuccessChannels.value = false
+    }, 3000)
   } catch (error) {
     errorChannels.value = error instanceof Error ? error.message : 'admin.settings.errors.unknown'
   } finally {
@@ -239,19 +307,19 @@ const errorBotMessage = ref('')
 const uniqueId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
 const applyNotificationChannelSettings = (settings: NotificationChannelSettings) => {
-  dingtalkBots.value = (settings.dingtalk ?? []).map(bot => ({
+  dingtalkBots.value = (settings.dingtalk ?? []).map((bot) => ({
     id: bot.id || uniqueId(),
     name: bot.name,
     webhook: bot.webhook,
     secret: bot.secret,
   }))
-  wecomBots.value = (settings.wecom ?? []).map(bot => ({
+  wecomBots.value = (settings.wecom ?? []).map((bot) => ({
     id: bot.id || uniqueId(),
     name: bot.name,
     webhook: bot.webhook,
     secret: '',
   }))
-  qqBots.value = (settings.qq ?? []).map(bot => ({
+  qqBots.value = (settings.qq ?? []).map((bot) => ({
     id: bot.id || uniqueId(),
     name: bot.name,
     appId: bot.appId,
@@ -259,13 +327,13 @@ const applyNotificationChannelSettings = (settings: NotificationChannelSettings)
     userOpenId: bot.userOpenId ?? '',
     groupOpenId: bot.groupOpenId ?? '',
   }))
-  feishuBots.value = (settings.feishu ?? []).map(bot => ({
+  feishuBots.value = (settings.feishu ?? []).map((bot) => ({
     id: bot.id || uniqueId(),
     name: bot.name,
     webhook: bot.webhook,
     secret: bot.secret,
   }))
-  telegramBots.value = (settings.telegram ?? []).map(bot => ({
+  telegramBots.value = (settings.telegram ?? []).map((bot) => ({
     id: bot.id || uniqueId(),
     name: bot.name,
     botToken: bot.botToken,
@@ -275,21 +343,21 @@ const applyNotificationChannelSettings = (settings: NotificationChannelSettings)
 }
 
 const currentNotificationChannelSettings = (): NotificationChannelSettings => ({
-  dingtalk: dingtalkBots.value.map(bot => ({
+  dingtalk: dingtalkBots.value.map((bot) => ({
     id: bot.id,
     name: bot.name.trim(),
     enabled: true,
     webhook: bot.webhook.trim(),
     secret: bot.secret.trim(),
   })),
-  wecom: wecomBots.value.map(bot => ({
+  wecom: wecomBots.value.map((bot) => ({
     id: bot.id,
     name: bot.name.trim(),
     enabled: true,
     webhook: bot.webhook.trim(),
     secret: '',
   })),
-  qq: qqBots.value.map(bot => ({
+  qq: qqBots.value.map((bot) => ({
     id: bot.id,
     name: bot.name.trim(),
     enabled: true,
@@ -298,14 +366,14 @@ const currentNotificationChannelSettings = (): NotificationChannelSettings => ({
     userOpenId: bot.userOpenId.trim(),
     groupOpenId: bot.groupOpenId.trim(),
   })),
-  feishu: feishuBots.value.map(bot => ({
+  feishu: feishuBots.value.map((bot) => ({
     id: bot.id,
     name: bot.name.trim(),
     enabled: true,
     webhook: bot.webhook.trim(),
     secret: bot.secret.trim(),
   })),
-  telegram: telegramBots.value.map(bot => ({
+  telegram: telegramBots.value.map((bot) => ({
     id: bot.id,
     name: bot.name.trim(),
     enabled: true,
@@ -338,7 +406,9 @@ const testBot = async (channel: NotificationChannel, id: string) => {
   try {
     await testNotificationChannel(payload)
     successBotId.value = id
-    setTimeout(() => { successBotId.value = null }, 2000)
+    setTimeout(() => {
+      successBotId.value = null
+    }, 2000)
   } catch (error) {
     errorBotId.value = id
     errorBotMessage.value = error instanceof Error ? error.message : 'admin.settings.errors.unknown'
@@ -349,7 +419,7 @@ const testBot = async (channel: NotificationChannel, id: string) => {
 
 const testPayload = (channel: NotificationChannel, id: string): TestNotificationChannelPayload | null => {
   if (channel === 'qq') {
-    const bot = qqBots.value.find(item => item.id === id)
+    const bot = qqBots.value.find((item) => item.id === id)
     if (!bot) return null
     return {
       channel,
@@ -359,20 +429,36 @@ const testPayload = (channel: NotificationChannel, id: string): TestNotification
     }
   }
   if (channel === 'telegram') {
-    const bot = telegramBots.value.find(item => item.id === id)
+    const bot = telegramBots.value.find((item) => item.id === id)
     if (!bot) return null
-    return { channel, telegramBotToken: bot.botToken.trim(), telegramChatId: bot.chatId.trim(), telegramProxyUrl: bot.proxyUrl.trim() }
+    return {
+      channel,
+      telegramBotToken: bot.botToken.trim(),
+      telegramChatId: bot.chatId.trim(),
+      telegramProxyUrl: bot.proxyUrl.trim(),
+    }
   }
-  const bot = channel === 'dingtalk'
-    ? dingtalkBots.value.find(item => item.id === id)
-    : channel === 'wecom'
-      ? wecomBots.value.find(item => item.id === id)
-      : feishuBots.value.find(item => item.id === id)
+  const bot =
+    channel === 'dingtalk'
+      ? dingtalkBots.value.find((item) => item.id === id)
+      : channel === 'wecom'
+        ? wecomBots.value.find((item) => item.id === id)
+        : feishuBots.value.find((item) => item.id === id)
   if (!bot) return null
-  return { channel, webhook: bot.webhook.trim(), secret: channel === 'wecom' ? '' : bot.secret.trim() }
+  return {
+    channel,
+    webhook: bot.webhook.trim(),
+    secret: channel === 'wecom' ? '' : bot.secret.trim(),
+  }
 }
 
-const allBots = computed(() => [...dingtalkBots.value, ...wecomBots.value, ...qqBots.value, ...feishuBots.value, ...telegramBots.value])
+const allBots = computed(() => [
+  ...dingtalkBots.value,
+  ...wecomBots.value,
+  ...qqBots.value,
+  ...feishuBots.value,
+  ...telegramBots.value,
+])
 const hasBots = computed(() => allBots.value.length > 0)
 
 const toggleBalanceBot = (botId: string) => {
@@ -517,7 +603,9 @@ const saveSmtp = async () => {
     }
     applySmtpSettings(await saveSmtpSettings(payload))
     showSuccessSmtp.value = true
-    setTimeout(() => { showSuccessSmtp.value = false }, 3000)
+    setTimeout(() => {
+      showSuccessSmtp.value = false
+    }, 3000)
   } catch (error) {
     errorSmtp.value = error instanceof Error ? error.message : 'admin.settings.errors.unknown'
   } finally {
@@ -533,7 +621,9 @@ const testSmtp = async () => {
   try {
     await testSmtpEmail({ recipientEmail: smtpTestRecipient.value.trim() })
     successSmtpTest.value = true
-    setTimeout(() => { successSmtpTest.value = false }, 3000)
+    setTimeout(() => {
+      successSmtpTest.value = false
+    }, 3000)
   } catch (error) {
     errorSmtpTest.value = error instanceof Error ? error.message : 'admin.settings.errors.unknown'
   } finally {
@@ -551,57 +641,37 @@ onMounted(async () => {
 <template>
   <div class="mx-auto max-w-6xl space-y-6 pb-12">
     <!-- Tab bar -->
-    <div class="sticky top-0 z-10 -mx-3 mb-8 flex justify-start border-b border-border/40 bg-background/90 px-3 py-4 backdrop-blur-xl sm:-mx-6 sm:justify-center sm:px-6">
-      <div class="inline-flex max-w-full overflow-x-auto rounded-lg border border-border/50 bg-surface-elevated p-1 shadow-sm" role="tablist" :aria-label="t('admin.menu.settings')">
-        <button
-          id="settings-tab-strategy"
-          type="button"
-          role="tab"
-          :aria-selected="activeTab === 'strategy'"
-          aria-controls="settings-panel-strategy"
-          @click="activeTab = 'strategy'"
-          class="relative whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:px-6"
-          :class="activeTab === 'strategy' ? 'text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-surface/50'"
-        >
-          <div v-if="activeTab === 'strategy'" class="absolute inset-0 -z-10 rounded-md border border-border/50 bg-background shadow-sm"></div>
+    <div
+      class="sticky top-0 z-10 -mx-3 mb-8 flex justify-start border-b border-border/40 bg-background/90 px-3 py-4 backdrop-blur-xl sm:-mx-6 sm:justify-center sm:px-6"
+    >
+      <UiTabs
+        :value="activeTab"
+        @update:value="activeTab = $event"
+        :aria-label="t('admin.menu.settings')"
+        type="segment"
+        size="small"
+        :animated="false"
+        class="ui-segmented max-w-full"
+      >
+        <NTab :name="'strategy'" id="settings-tab-strategy">
           <div class="flex items-center gap-2">
             <Timer class="w-4 h-4" />
             {{ t('admin.settings.tabs.strategy') }}
           </div>
-        </button>
-        <button
-          id="settings-tab-channels"
-          type="button"
-          role="tab"
-          :aria-selected="activeTab === 'channels'"
-          aria-controls="settings-panel-channels"
-          @click="activeTab = 'channels'"
-          class="relative whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:px-6"
-          :class="activeTab === 'channels' ? 'text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-surface/50'"
-        >
-          <div v-if="activeTab === 'channels'" class="absolute inset-0 -z-10 rounded-md border border-border/50 bg-background shadow-sm"></div>
+        </NTab>
+        <NTab :name="'channels'" id="settings-tab-channels">
           <div class="flex items-center gap-2">
             <MessageSquare class="w-4 h-4" />
             {{ t('admin.settings.tabs.channels') }}
           </div>
-        </button>
-        <button
-          id="settings-tab-email"
-          type="button"
-          role="tab"
-          :aria-selected="activeTab === 'email'"
-          aria-controls="settings-panel-email"
-          @click="activeTab = 'email'"
-          class="relative whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:px-6"
-          :class="activeTab === 'email' ? 'text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-surface/50'"
-        >
-          <div v-if="activeTab === 'email'" class="absolute inset-0 -z-10 rounded-md border border-border/50 bg-background shadow-sm"></div>
+        </NTab>
+        <NTab :name="'email'" id="settings-tab-email">
           <div class="flex items-center gap-2">
             <Mail class="w-4 h-4" />
             {{ t('admin.settings.tabs.email') }}
           </div>
-        </button>
-      </div>
+        </NTab>
+      </UiTabs>
     </div>
 
     <div class="relative">
@@ -617,22 +687,41 @@ onMounted(async () => {
         <!-- ============================================ -->
         <!-- Strategy Tab                                 -->
         <!-- ============================================ -->
-        <div v-if="activeTab === 'strategy'" id="settings-panel-strategy" class="space-y-5" role="tabpanel" aria-labelledby="settings-tab-strategy">
+        <div
+          v-if="activeTab === 'strategy'"
+          id="settings-panel-strategy"
+          class="space-y-5"
+          role="tabpanel"
+          aria-labelledby="settings-tab-strategy"
+        >
           <!-- Strategy Header + Save button -->
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h3 class="text-lg font-semibold text-foreground">{{ t('admin.settings.tabs.strategy') }}</h3>
-              <p class="text-sm text-muted-foreground mt-0.5">{{ t('admin.settings.strategyDescription') }}</p>
+              <h3 class="text-lg font-semibold text-foreground">
+                {{ t('admin.settings.tabs.strategy') }}
+              </h3>
+              <p class="text-sm text-muted-foreground mt-0.5">
+                {{ t('admin.settings.strategyDescription') }}
+              </p>
             </div>
             <Button :disabled="isSavingStrategy" @click="saveStrategy" class="min-w-[120px]">
               <Loader2 v-if="isSavingStrategy" class="h-4 w-4 animate-spin mr-2" />
               <CheckCircle2 v-else-if="showSuccessStrategy" class="h-4 w-4 mr-2 text-green-400" />
               <Save v-else class="h-4 w-4 mr-2" />
-              {{ showSuccessStrategy ? t('admin.settings.saveSuccess') : (isSavingStrategy ? t('admin.settings.saving') : t('admin.settings.save')) }}
+              {{
+                showSuccessStrategy
+                  ? t('admin.settings.saveSuccess')
+                  : isSavingStrategy
+                    ? t('admin.settings.saving')
+                    : t('admin.settings.save')
+              }}
             </Button>
           </div>
 
-          <p v-if="errorStrategy" class="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <p
+            v-if="errorStrategy"
+            class="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          >
             {{ t(errorStrategy) }}
           </p>
 
@@ -644,20 +733,31 @@ onMounted(async () => {
                   <Timer class="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 class="text-sm font-semibold text-foreground">{{ t('admin.settings.sections.basic.refreshInterval') }}</h4>
-                  <p class="text-xs text-muted-foreground mt-0.5">{{ t('admin.settings.sections.basic.refreshIntervalHelp') }}</p>
+                  <h4 class="text-sm font-semibold text-foreground">
+                    {{ t('admin.settings.sections.basic.refreshInterval') }}
+                  </h4>
+                  <p class="text-xs text-muted-foreground mt-0.5">
+                    {{ t('admin.settings.sections.basic.refreshIntervalHelp') }}
+                  </p>
                 </div>
               </div>
               <label class="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
-                <input type="checkbox" v-model="enableRefreshInterval" class="sr-only peer" :aria-label="t('admin.settings.sections.basic.refreshInterval')">
-                <div class="peer h-6 w-11 rounded-full bg-surface-elevated peer-checked:bg-primary peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-border after:bg-white after:transition-transform after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                <UiChoice
+                  switch
+                  type="checkbox"
+                  v-model="enableRefreshInterval"
+                  class="sr-only peer"
+                  :aria-label="t('admin.settings.sections.basic.refreshInterval')"
+                />
               </label>
             </div>
             <div v-if="enableRefreshInterval" class="px-5 pb-5 pt-0">
               <div class="animate-in slide-in-from-top-2 fade-in duration-200 sm:pl-12">
                 <div class="flex items-center gap-3 max-w-xs">
                   <Input type="number" v-model="refreshInterval" :min="minimumRefreshInterval" step="10" class="w-24" />
-                  <span class="text-sm text-muted-foreground whitespace-nowrap">{{ t('admin.settings.sections.basic.seconds') }}</span>
+                  <span class="text-sm text-muted-foreground whitespace-nowrap">{{
+                    t('admin.settings.sections.basic.seconds')
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -671,8 +771,12 @@ onMounted(async () => {
                   <AlertTriangle class="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 class="text-sm font-semibold text-foreground">{{ t('admin.settings.sections.thresholds.balanceWarning') }}</h4>
-                  <p class="text-xs text-muted-foreground mt-0.5">{{ t('admin.settings.sections.thresholds.balanceWarningHelp') }}</p>
+                  <h4 class="text-sm font-semibold text-foreground">
+                    {{ t('admin.settings.sections.thresholds.balanceWarning') }}
+                  </h4>
+                  <p class="text-xs text-muted-foreground mt-0.5">
+                    {{ t('admin.settings.sections.thresholds.balanceWarningHelp') }}
+                  </p>
                   <div v-if="!enableRefreshInterval" class="flex items-center gap-1.5 mt-1.5">
                     <Info class="w-3.5 h-3.5 text-blue-500 shrink-0" />
                     <span class="text-xs text-blue-500">{{ t('admin.settings.requiresRefresh') }}</span>
@@ -680,34 +784,58 @@ onMounted(async () => {
                 </div>
               </div>
               <label class="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
-                <input type="checkbox" v-model="enableBalanceWarning" class="sr-only peer" :aria-label="t('admin.settings.sections.thresholds.balanceWarning')">
-                <div class="peer h-6 w-11 rounded-full bg-surface-elevated peer-checked:bg-primary peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-border after:bg-white after:transition-transform after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                <UiChoice
+                  switch
+                  type="checkbox"
+                  v-model="enableBalanceWarning"
+                  class="sr-only peer"
+                  :aria-label="t('admin.settings.sections.thresholds.balanceWarning')"
+                />
               </label>
             </div>
             <div v-if="enableBalanceWarning" class="px-5 pb-5 pt-0">
               <div class="space-y-4 animate-in slide-in-from-top-2 fade-in duration-200 sm:pl-12">
                 <!-- Threshold amount -->
                 <div class="grid gap-1.5">
-                  <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.balanceWarningAmount') }}</label>
+                  <label class="text-xs font-medium text-muted-foreground">{{
+                    t('admin.settings.balanceWarningAmount')
+                  }}</label>
                   <div class="relative max-w-xs">
-                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">¥</span>
-                    <Input type="number" v-model="defaultBalanceThreshold" min="0" step="0.01" class="pl-8" />
+                    <Input type="number" v-model="defaultBalanceThreshold" min="0" step="0.01" class="">
+                      <template #prefix><span class="text-sm font-medium text-muted-foreground">¥</span></template>
+                    </Input>
                   </div>
                 </div>
 
                 <!-- Bot selector -->
                 <div class="grid gap-1.5">
-                  <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.notifyBots') }} <span class="text-destructive">*</span></label>
+                  <label class="text-xs font-medium text-muted-foreground"
+                    >{{ t('admin.settings.notifyBots') }} <span class="text-destructive">*</span></label
+                  >
                   <div class="flex flex-wrap gap-2">
-                    <button v-for="bot in allBots" :key="'bal-' + bot.id" type="button" :aria-pressed="balanceSelectedBots.includes(bot.id)" @click="toggleBalanceBot(bot.id)" class="flex select-none items-center gap-2 rounded-lg border px-3 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" :class="balanceSelectedBots.includes(bot.id) ? 'border-primary bg-primary/10 text-primary' : 'border-border/50 bg-surface/30 hover:bg-surface/50'">
+                    <UiButton
+                      v-for="bot in allBots"
+                      :key="'bal-' + bot.id"
+                      attr-type="button"
+                      :aria-pressed="balanceSelectedBots.includes(bot.id)"
+                      @click="toggleBalanceBot(bot.id)"
+                      class="flex select-none items-center gap-2 rounded-lg border px-3 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      :class="
+                        balanceSelectedBots.includes(bot.id)
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border/50 bg-surface/30 hover:bg-surface/50'
+                      "
+                    >
                       <MessageSquare class="w-3.5 h-3.5" />
                       <span class="text-sm">{{ bot.name || t('admin.settings.unnamedBot') }}</span>
-                    </button>
+                    </UiButton>
                     <div v-if="!hasBots" class="text-sm text-muted-foreground italic py-1">
                       {{ t('admin.settings.noBotsConfigured') }}
                     </div>
                   </div>
-                  <p v-if="balanceSelectedBots.length === 0 && hasBots" class="text-xs text-destructive mt-0.5">{{ t('admin.settings.mustSelectBot') }}</p>
+                  <p v-if="balanceSelectedBots.length === 0 && hasBots" class="text-xs text-destructive mt-0.5">
+                    {{ t('admin.settings.mustSelectBot') }}
+                  </p>
                 </div>
 
                 <NotificationTemplateEditor
@@ -715,7 +843,13 @@ onMounted(async () => {
                   v-model:format="balanceTemplateFormat"
                   :variables="balanceTemplateVariables"
                   :preview-values="balancePreviewValues"
-                  :placeholder="t('admin.settings.sections.templates.balanceTemplatePlaceholder', { siteName: '{siteName}', balance: '{balance}', threshold: '{threshold}' })"
+                  :placeholder="
+                    t('admin.settings.sections.templates.balanceTemplatePlaceholder', {
+                      siteName: '{siteName}',
+                      balance: '{balance}',
+                      threshold: '{threshold}',
+                    })
+                  "
                 />
               </div>
             </div>
@@ -729,8 +863,12 @@ onMounted(async () => {
                   <TrendingUp class="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 class="text-sm font-semibold text-foreground">{{ t('admin.settings.sections.thresholds.multiplierChangeWarning') }}</h4>
-                  <p class="text-xs text-muted-foreground mt-0.5">{{ t('admin.settings.sections.thresholds.multiplierChangeWarningHelp') }}</p>
+                  <h4 class="text-sm font-semibold text-foreground">
+                    {{ t('admin.settings.sections.thresholds.multiplierChangeWarning') }}
+                  </h4>
+                  <p class="text-xs text-muted-foreground mt-0.5">
+                    {{ t('admin.settings.sections.thresholds.multiplierChangeWarningHelp') }}
+                  </p>
                   <div v-if="!enableRefreshInterval" class="flex items-center gap-1.5 mt-1.5">
                     <Info class="w-3.5 h-3.5 text-blue-500 shrink-0" />
                     <span class="text-xs text-blue-500">{{ t('admin.settings.requiresRefresh') }}</span>
@@ -738,25 +876,46 @@ onMounted(async () => {
                 </div>
               </div>
               <label class="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
-                <input type="checkbox" v-model="enableMultiplierAlert" class="sr-only peer" :aria-label="t('admin.settings.sections.thresholds.multiplierChangeWarning')">
-                <div class="peer h-6 w-11 rounded-full bg-surface-elevated peer-checked:bg-primary peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-border after:bg-white after:transition-transform after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                <UiChoice
+                  switch
+                  type="checkbox"
+                  v-model="enableMultiplierAlert"
+                  class="sr-only peer"
+                  :aria-label="t('admin.settings.sections.thresholds.multiplierChangeWarning')"
+                />
               </label>
             </div>
             <div v-if="enableMultiplierAlert" class="px-5 pb-5 pt-0">
               <div class="space-y-4 animate-in slide-in-from-top-2 fade-in duration-200 sm:pl-12">
                 <!-- Bot selector -->
                 <div class="grid gap-1.5">
-                  <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.notifyBots') }} <span class="text-destructive">*</span></label>
+                  <label class="text-xs font-medium text-muted-foreground"
+                    >{{ t('admin.settings.notifyBots') }} <span class="text-destructive">*</span></label
+                  >
                   <div class="flex flex-wrap gap-2">
-                    <button v-for="bot in allBots" :key="'mul-' + bot.id" type="button" :aria-pressed="multiplierSelectedBots.includes(bot.id)" @click="toggleMultiplierBot(bot.id)" class="flex select-none items-center gap-2 rounded-lg border px-3 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" :class="multiplierSelectedBots.includes(bot.id) ? 'border-primary bg-primary/10 text-primary' : 'border-border/50 bg-surface/30 hover:bg-surface/50'">
+                    <UiButton
+                      v-for="bot in allBots"
+                      :key="'mul-' + bot.id"
+                      attr-type="button"
+                      :aria-pressed="multiplierSelectedBots.includes(bot.id)"
+                      @click="toggleMultiplierBot(bot.id)"
+                      class="flex select-none items-center gap-2 rounded-lg border px-3 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      :class="
+                        multiplierSelectedBots.includes(bot.id)
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border/50 bg-surface/30 hover:bg-surface/50'
+                      "
+                    >
                       <MessageSquare class="w-3.5 h-3.5" />
                       <span class="text-sm">{{ bot.name || t('admin.settings.unnamedBot') }}</span>
-                    </button>
+                    </UiButton>
                     <div v-if="!hasBots" class="text-sm text-muted-foreground italic py-1">
                       {{ t('admin.settings.noBotsConfigured') }}
                     </div>
                   </div>
-                  <p v-if="multiplierSelectedBots.length === 0 && hasBots" class="text-xs text-destructive mt-0.5">{{ t('admin.settings.mustSelectBot') }}</p>
+                  <p v-if="multiplierSelectedBots.length === 0 && hasBots" class="text-xs text-destructive mt-0.5">
+                    {{ t('admin.settings.mustSelectBot') }}
+                  </p>
                 </div>
 
                 <NotificationTemplateEditor
@@ -764,121 +923,173 @@ onMounted(async () => {
                   v-model:format="multiplierTemplateFormat"
                   :variables="multiplierTemplateVariables"
                   :preview-values="multiplierPreviewValues"
-                  :placeholder="t('admin.settings.sections.templates.multiplierTemplatePlaceholder', { siteName: '{siteName}', groupName: '{groupName}', oldRate: '{oldRate}', newRate: '{newRate}' })"
+                  :placeholder="
+                    t('admin.settings.sections.templates.multiplierTemplatePlaceholder', {
+                      siteName: '{siteName}',
+                      groupName: '{groupName}',
+                      oldRate: '{oldRate}',
+                      newRate: '{newRate}',
+                    })
+                  "
                 />
-
               </div>
             </div>
           </div>
-
         </div>
 
         <!-- ============================================ -->
         <!-- Channels Tab                                 -->
         <!-- ============================================ -->
-        <section v-else-if="activeTab === 'channels'" id="settings-panel-channels" class="w-full overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm" role="tabpanel" aria-labelledby="settings-tab-channels">
+        <section
+          v-else-if="activeTab === 'channels'"
+          id="settings-panel-channels"
+          class="w-full overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm"
+          role="tabpanel"
+          aria-labelledby="settings-tab-channels"
+        >
           <div class="p-6 border-b border-border/50 bg-surface/30 flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="p-2 bg-blue-500/10 text-blue-500 rounded-xl">
                 <MessageSquare class="w-5 h-5" />
               </div>
               <div>
-                <h3 class="text-lg font-semibold text-foreground">{{ t('admin.settings.sections.channels.title') }}</h3>
-                <p class="text-sm text-muted-foreground">{{ t('admin.settings.sections.channels.description') }}</p>
+                <h3 class="text-lg font-semibold text-foreground">
+                  {{ t('admin.settings.sections.channels.title') }}
+                </h3>
+                <p class="text-sm text-muted-foreground">
+                  {{ t('admin.settings.sections.channels.description') }}
+                </p>
               </div>
             </div>
             <Button :disabled="isSavingChannels || isLoadingChannels" @click="saveChannels" class="min-w-[120px]">
               <Loader2 v-if="isSavingChannels" class="h-4 w-4 animate-spin mr-2" />
               <CheckCircle2 v-else-if="showSuccessChannels" class="h-4 w-4 mr-2 text-green-400" />
               <Save v-else class="h-4 w-4 mr-2" />
-              {{ showSuccessChannels ? t('admin.settings.saveSuccess') : (isSavingChannels ? t('admin.settings.saving') : t('admin.settings.save')) }}
+              {{
+                showSuccessChannels
+                  ? t('admin.settings.saveSuccess')
+                  : isSavingChannels
+                    ? t('admin.settings.saving')
+                    : t('admin.settings.save')
+              }}
             </Button>
           </div>
           <div class="p-6 space-y-6">
-            <p v-if="isLoadingChannels" class="text-sm text-muted-foreground">{{ t('admin.settings.sections.channels.loading') }}</p>
-            <p v-if="errorChannels" class="text-sm text-destructive">{{ t(errorChannels) }}</p>
+            <p v-if="isLoadingChannels" class="text-sm text-muted-foreground">
+              {{ t('admin.settings.sections.channels.loading') }}
+            </p>
+            <p v-if="errorChannels" class="text-sm text-destructive">
+              {{ t(errorChannels) }}
+            </p>
 
             <!-- Channels Sub-tabs -->
-            <div class="flex overflow-x-auto border-b border-border/30">
-              <button
-                @click="activeChannelTab = 'dingtalk'"
-                class="shrink-0 px-6 py-3 text-sm font-medium transition-colors border-b-2"
-                :class="activeChannelTab === 'dingtalk' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'"
-              >
+            <UiTabs
+              :value="activeChannelTab"
+              @update:value="activeChannelTab = $event"
+              type="line"
+              size="small"
+              :animated="false"
+              class="ui-tabs"
+            >
+              <NTab :name="'dingtalk'">
                 {{ t('admin.settings.sections.channels.dingtalk') }} ({{ dingtalkBots.length }})
-              </button>
-              <button
-                @click="activeChannelTab = 'wecom'"
-                class="shrink-0 px-6 py-3 text-sm font-medium transition-colors border-b-2"
-                :class="activeChannelTab === 'wecom' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'"
-              >
-                {{ t('admin.settings.sections.channels.wecom') }} ({{ wecomBots.length }})
-              </button>
-              <button
-                @click="activeChannelTab = 'qq'"
-                class="shrink-0 px-6 py-3 text-sm font-medium transition-colors border-b-2"
-                :class="activeChannelTab === 'qq' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'"
-              >
-                {{ t('admin.settings.sections.channels.qq') }} ({{ qqBots.length }})
-              </button>
-              <button
-                @click="activeChannelTab = 'feishu'"
-                class="shrink-0 px-6 py-3 text-sm font-medium transition-colors border-b-2"
-                :class="activeChannelTab === 'feishu' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'"
-              >
+              </NTab>
+              <NTab :name="'wecom'"> {{ t('admin.settings.sections.channels.wecom') }} ({{ wecomBots.length }}) </NTab>
+              <NTab :name="'qq'"> {{ t('admin.settings.sections.channels.qq') }} ({{ qqBots.length }}) </NTab>
+              <NTab :name="'feishu'">
                 {{ t('admin.settings.sections.channels.feishu') }} ({{ feishuBots.length }})
-              </button>
-              <button
-                @click="activeChannelTab = 'telegram'"
-                class="shrink-0 px-6 py-3 text-sm font-medium transition-colors border-b-2"
-                :class="activeChannelTab === 'telegram' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'"
-              >
+              </NTab>
+              <NTab :name="'telegram'">
                 {{ t('admin.settings.sections.channels.telegram') }} ({{ telegramBots.length }})
-              </button>
-            </div>
+              </NTab>
+            </UiTabs>
 
             <!-- Dingtalk -->
             <div v-if="activeChannelTab === 'dingtalk'" class="space-y-4">
               <div class="flex items-center justify-between">
                 <div>
-                  <h4 class="font-medium text-foreground">{{ t('admin.settings.sections.channels.dingtalk') }}</h4>
-                  <p class="text-xs text-muted-foreground mt-0.5">{{ t('admin.settings.sections.channels.dingtalkHelp') }}</p>
+                  <h4 class="font-medium text-foreground">
+                    {{ t('admin.settings.sections.channels.dingtalk') }}
+                  </h4>
+                  <p class="text-xs text-muted-foreground mt-0.5">
+                    {{ t('admin.settings.sections.channels.dingtalkHelp') }}
+                  </p>
                 </div>
                 <Button variant="secondary" size="sm" class="h-8" @click="addBot('dingtalk')">
-                  <Plus class="h-3 w-3 mr-1.5" /> {{ t('admin.settings.addDingtalkBot') }}
+                  <Plus class="h-3 w-3 mr-1.5" />
+                  {{ t('admin.settings.addDingtalkBot') }}
                 </Button>
               </div>
               <div class="grid md:grid-cols-2 gap-4">
-                <div v-for="(bot, idx) in dingtalkBots" :key="bot.id" class="p-4 rounded-xl border border-border/50 bg-surface/20 relative group">
-                  <Button variant="ghost" size="sm" class="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:bg-red-500/10" @click="removeBot('dingtalk', idx)">
+                <div
+                  v-for="(bot, idx) in dingtalkBots"
+                  :key="bot.id"
+                  class="p-4 rounded-xl border border-border/50 bg-surface/20 relative group"
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:bg-red-500/10"
+                    @click="removeBot('dingtalk', idx)"
+                  >
                     <Trash2 class="h-4 w-4" />
                   </Button>
                   <div class="grid gap-4 pr-10">
                     <div class="grid gap-2">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.botNameLabel') }}</label>
-                      <Input v-model="bot.name" :placeholder="t('admin.settings.botNameDingtalkPlaceholder')" class="h-8 text-sm" />
+                      <label class="text-xs font-medium text-muted-foreground">{{
+                        t('admin.settings.botNameLabel')
+                      }}</label>
+                      <Input
+                        v-model="bot.name"
+                        :placeholder="t('admin.settings.botNameDingtalkPlaceholder')"
+                        class="h-8 text-sm"
+                      />
                     </div>
                     <div class="grid gap-2">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.sections.channels.webhookUrl') }}</label>
-                      <Input type="url" v-model="bot.webhook" placeholder="https://oapi.dingtalk.com/robot/send?access_token=..." class="h-8 text-sm" />
+                      <label class="text-xs font-medium text-muted-foreground">{{
+                        t('admin.settings.sections.channels.webhookUrl')
+                      }}</label>
+                      <Input
+                        type="url"
+                        v-model="bot.webhook"
+                        placeholder="https://oapi.dingtalk.com/robot/send?access_token=..."
+                        class="h-8 text-sm"
+                      />
                     </div>
                     <div class="grid gap-2">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.sections.channels.secret') }}</label>
+                      <label class="text-xs font-medium text-muted-foreground">{{
+                        t('admin.settings.sections.channels.secret')
+                      }}</label>
                       <Input type="password" v-model="bot.secret" placeholder="SEC..." class="h-8 text-sm" />
                     </div>
                     <div>
-                      <Button variant="secondary" size="sm" class="h-8" :disabled="testingBotId === bot.id || !bot.webhook" @click="testBot('dingtalk', bot.id)">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        class="h-8"
+                        :disabled="testingBotId === bot.id || !bot.webhook"
+                        @click="testBot('dingtalk', bot.id)"
+                      >
                         <Loader2 v-if="testingBotId === bot.id" class="h-3 w-3 animate-spin mr-1.5" />
                         <CheckCircle2 v-else-if="successBotId === bot.id" class="h-3 w-3 mr-1.5 text-green-500" />
                         <Send v-else class="h-3 w-3 mr-1.5 text-muted-foreground" />
-                        <span :class="{ 'text-green-500': successBotId === bot.id }">{{ successBotId === bot.id ? t('admin.settings.sections.channels.testConnectionSuccess') : t('admin.settings.sections.channels.testConnection') }}</span>
+                        <span :class="{ 'text-green-500': successBotId === bot.id }">{{
+                          successBotId === bot.id
+                            ? t('admin.settings.sections.channels.testConnectionSuccess')
+                            : t('admin.settings.sections.channels.testConnection')
+                        }}</span>
                       </Button>
-                      <p v-if="errorBotId === bot.id" class="mt-2 text-xs text-destructive">{{ t(errorBotMessage) }}</p>
+                      <p v-if="errorBotId === bot.id" class="mt-2 text-xs text-destructive">
+                        {{ t(errorBotMessage) }}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
-              <div v-if="dingtalkBots.length === 0" class="text-center py-6 text-sm text-muted-foreground border border-dashed border-border/50 rounded-xl">
+              <div
+                v-if="dingtalkBots.length === 0"
+                class="text-center py-6 text-sm text-muted-foreground border border-dashed border-border/50 rounded-xl"
+              >
                 {{ t('admin.settings.emptyDingtalk') }}
               </div>
             </div>
@@ -887,40 +1098,82 @@ onMounted(async () => {
             <div v-if="activeChannelTab === 'wecom'" class="space-y-4">
               <div class="flex items-center justify-between gap-4">
                 <div>
-                  <h4 class="font-medium text-foreground">{{ t('admin.settings.sections.channels.wecom') }}</h4>
-                  <p class="text-xs text-muted-foreground mt-0.5">{{ t('admin.settings.sections.channels.wecomHelp') }}</p>
+                  <h4 class="font-medium text-foreground">
+                    {{ t('admin.settings.sections.channels.wecom') }}
+                  </h4>
+                  <p class="text-xs text-muted-foreground mt-0.5">
+                    {{ t('admin.settings.sections.channels.wecomHelp') }}
+                  </p>
                 </div>
                 <Button variant="secondary" size="sm" class="h-8 shrink-0" @click="addBot('wecom')">
-                  <Plus class="h-3 w-3 mr-1.5" /> {{ t('admin.settings.addWecomBot') }}
+                  <Plus class="h-3 w-3 mr-1.5" />
+                  {{ t('admin.settings.addWecomBot') }}
                 </Button>
               </div>
               <div class="grid md:grid-cols-2 gap-4">
-                <div v-for="(bot, idx) in wecomBots" :key="bot.id" class="p-4 rounded-xl border border-border/50 bg-surface/20 relative group">
-                  <Button variant="ghost" size="sm" class="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:bg-red-500/10" @click="removeBot('wecom', idx)">
+                <div
+                  v-for="(bot, idx) in wecomBots"
+                  :key="bot.id"
+                  class="p-4 rounded-xl border border-border/50 bg-surface/20 relative group"
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:bg-red-500/10"
+                    @click="removeBot('wecom', idx)"
+                  >
                     <Trash2 class="h-4 w-4" />
                   </Button>
                   <div class="grid gap-4 pr-10">
                     <div class="grid gap-2">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.botNameLabel') }}</label>
-                      <Input v-model="bot.name" :placeholder="t('admin.settings.botNameWecomPlaceholder')" class="h-8 text-sm" />
+                      <label class="text-xs font-medium text-muted-foreground">{{
+                        t('admin.settings.botNameLabel')
+                      }}</label>
+                      <Input
+                        v-model="bot.name"
+                        :placeholder="t('admin.settings.botNameWecomPlaceholder')"
+                        class="h-8 text-sm"
+                      />
                     </div>
                     <div class="grid gap-2">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.sections.channels.webhookUrl') }}</label>
-                      <Input type="url" v-model="bot.webhook" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..." class="h-8 text-sm" />
+                      <label class="text-xs font-medium text-muted-foreground">{{
+                        t('admin.settings.sections.channels.webhookUrl')
+                      }}</label>
+                      <Input
+                        type="url"
+                        v-model="bot.webhook"
+                        placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..."
+                        class="h-8 text-sm"
+                      />
                     </div>
                     <div>
-                      <Button variant="secondary" size="sm" class="h-8" :disabled="testingBotId === bot.id || !bot.webhook" @click="testBot('wecom', bot.id)">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        class="h-8"
+                        :disabled="testingBotId === bot.id || !bot.webhook"
+                        @click="testBot('wecom', bot.id)"
+                      >
                         <Loader2 v-if="testingBotId === bot.id" class="h-3 w-3 animate-spin mr-1.5" />
                         <CheckCircle2 v-else-if="successBotId === bot.id" class="h-3 w-3 mr-1.5 text-green-500" />
                         <Send v-else class="h-3 w-3 mr-1.5 text-muted-foreground" />
-                        <span :class="{ 'text-green-500': successBotId === bot.id }">{{ successBotId === bot.id ? t('admin.settings.sections.channels.testConnectionSuccess') : t('admin.settings.sections.channels.testConnection') }}</span>
+                        <span :class="{ 'text-green-500': successBotId === bot.id }">{{
+                          successBotId === bot.id
+                            ? t('admin.settings.sections.channels.testConnectionSuccess')
+                            : t('admin.settings.sections.channels.testConnection')
+                        }}</span>
                       </Button>
-                      <p v-if="errorBotId === bot.id" class="mt-2 text-xs text-destructive">{{ t(errorBotMessage) }}</p>
+                      <p v-if="errorBotId === bot.id" class="mt-2 text-xs text-destructive">
+                        {{ t(errorBotMessage) }}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
-              <div v-if="wecomBots.length === 0" class="text-center py-6 text-sm text-muted-foreground border border-dashed border-border/50 rounded-xl">
+              <div
+                v-if="wecomBots.length === 0"
+                class="text-center py-6 text-sm text-muted-foreground border border-dashed border-border/50 rounded-xl"
+              >
                 {{ t('admin.settings.emptyWecom') }}
               </div>
             </div>
@@ -929,49 +1182,105 @@ onMounted(async () => {
             <div v-if="activeChannelTab === 'qq'" class="space-y-4">
               <div class="flex items-center justify-between gap-4">
                 <div>
-                  <h4 class="font-medium text-foreground">{{ t('admin.settings.sections.channels.qq') }}</h4>
-                  <p class="text-xs text-muted-foreground mt-0.5">{{ t('admin.settings.sections.channels.qqHelp') }}</p>
+                  <h4 class="font-medium text-foreground">
+                    {{ t('admin.settings.sections.channels.qq') }}
+                  </h4>
+                  <p class="text-xs text-muted-foreground mt-0.5">
+                    {{ t('admin.settings.sections.channels.qqHelp') }}
+                  </p>
                 </div>
                 <Button variant="secondary" size="sm" class="h-8 shrink-0" @click="addBot('qq')">
-                  <Plus class="h-3 w-3 mr-1.5" /> {{ t('admin.settings.addQQBot') }}
+                  <Plus class="h-3 w-3 mr-1.5" />
+                  {{ t('admin.settings.addQQBot') }}
                 </Button>
               </div>
               <div class="grid md:grid-cols-2 gap-4">
-                <div v-for="(bot, idx) in qqBots" :key="bot.id" class="p-4 rounded-xl border border-border/50 bg-surface/20 relative group">
-                  <Button variant="ghost" size="sm" class="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:bg-red-500/10" @click="removeBot('qq', idx)">
+                <div
+                  v-for="(bot, idx) in qqBots"
+                  :key="bot.id"
+                  class="p-4 rounded-xl border border-border/50 bg-surface/20 relative group"
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:bg-red-500/10"
+                    @click="removeBot('qq', idx)"
+                  >
                     <Trash2 class="h-4 w-4" />
                   </Button>
                   <div class="grid gap-4 pr-10">
                     <div class="grid gap-2">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.botNameLabel') }}</label>
-                      <Input v-model="bot.name" :placeholder="t('admin.settings.botNameQQPlaceholder')" class="h-8 text-sm" />
+                      <label class="text-xs font-medium text-muted-foreground">{{
+                        t('admin.settings.botNameLabel')
+                      }}</label>
+                      <Input
+                        v-model="bot.name"
+                        :placeholder="t('admin.settings.botNameQQPlaceholder')"
+                        class="h-8 text-sm"
+                      />
                     </div>
                     <div class="grid gap-2">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.sections.channels.appId') }}</label>
-                      <Input v-model="bot.appId" :placeholder="t('admin.settings.sections.channels.appIdPlaceholder')" class="h-8 text-sm" />
+                      <label class="text-xs font-medium text-muted-foreground">{{
+                        t('admin.settings.sections.channels.appId')
+                      }}</label>
+                      <Input
+                        v-model="bot.appId"
+                        :placeholder="t('admin.settings.sections.channels.appIdPlaceholder')"
+                        class="h-8 text-sm"
+                      />
                     </div>
                     <div class="grid gap-2">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.sections.channels.appSecret') }}</label>
-                      <Input type="password" v-model="bot.clientSecret" :placeholder="t('admin.settings.sections.channels.appSecretPlaceholder')" class="h-8 text-sm" />
+                      <label class="text-xs font-medium text-muted-foreground">{{
+                        t('admin.settings.sections.channels.appSecret')
+                      }}</label>
+                      <Input
+                        type="password"
+                        v-model="bot.clientSecret"
+                        :placeholder="t('admin.settings.sections.channels.appSecretPlaceholder')"
+                        class="h-8 text-sm"
+                      />
                     </div>
                     <div class="grid gap-2">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.sections.channels.userOpenId') }}</label>
-                      <Input v-model="bot.userOpenId" :placeholder="t('admin.settings.sections.channels.userOpenIdPlaceholder')" class="h-8 text-sm" />
-                      <p class="text-xs text-muted-foreground">{{ t('admin.settings.sections.channels.userOpenIdHelp') }}</p>
+                      <label class="text-xs font-medium text-muted-foreground">{{
+                        t('admin.settings.sections.channels.userOpenId')
+                      }}</label>
+                      <Input
+                        v-model="bot.userOpenId"
+                        :placeholder="t('admin.settings.sections.channels.userOpenIdPlaceholder')"
+                        class="h-8 text-sm"
+                      />
+                      <p class="text-xs text-muted-foreground">
+                        {{ t('admin.settings.sections.channels.userOpenIdHelp') }}
+                      </p>
                     </div>
                     <div>
-                      <Button variant="secondary" size="sm" class="h-8" :disabled="testingBotId === bot.id || !bot.appId || !bot.clientSecret || !bot.userOpenId" @click="testBot('qq', bot.id)">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        class="h-8"
+                        :disabled="testingBotId === bot.id || !bot.appId || !bot.clientSecret || !bot.userOpenId"
+                        @click="testBot('qq', bot.id)"
+                      >
                         <Loader2 v-if="testingBotId === bot.id" class="h-3 w-3 animate-spin mr-1.5" />
                         <CheckCircle2 v-else-if="successBotId === bot.id" class="h-3 w-3 mr-1.5 text-green-500" />
                         <Send v-else class="h-3 w-3 mr-1.5 text-muted-foreground" />
-                        <span :class="{ 'text-green-500': successBotId === bot.id }">{{ successBotId === bot.id ? t('admin.settings.sections.channels.testConnectionSuccess') : t('admin.settings.sections.channels.testConnection') }}</span>
+                        <span :class="{ 'text-green-500': successBotId === bot.id }">{{
+                          successBotId === bot.id
+                            ? t('admin.settings.sections.channels.testConnectionSuccess')
+                            : t('admin.settings.sections.channels.testConnection')
+                        }}</span>
                       </Button>
-                      <p v-if="errorBotId === bot.id" class="mt-2 text-xs text-destructive">{{ t(errorBotMessage) }}</p>
+                      <p v-if="errorBotId === bot.id" class="mt-2 text-xs text-destructive">
+                        {{ t(errorBotMessage) }}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
-              <div v-if="qqBots.length === 0" class="text-center py-6 text-sm text-muted-foreground border border-dashed border-border/50 rounded-xl">
+              <div
+                v-if="qqBots.length === 0"
+                class="text-center py-6 text-sm text-muted-foreground border border-dashed border-border/50 rounded-xl"
+              >
                 {{ t('admin.settings.emptyQQ') }}
               </div>
             </div>
@@ -980,44 +1289,88 @@ onMounted(async () => {
             <div v-if="activeChannelTab === 'feishu'" class="space-y-4">
               <div class="flex items-center justify-between">
                 <div>
-                  <h4 class="font-medium text-foreground">{{ t('admin.settings.sections.channels.feishu') }}</h4>
-                  <p class="text-xs text-muted-foreground mt-0.5">{{ t('admin.settings.sections.channels.feishuHelp') }}</p>
+                  <h4 class="font-medium text-foreground">
+                    {{ t('admin.settings.sections.channels.feishu') }}
+                  </h4>
+                  <p class="text-xs text-muted-foreground mt-0.5">
+                    {{ t('admin.settings.sections.channels.feishuHelp') }}
+                  </p>
                 </div>
                 <Button variant="secondary" size="sm" class="h-8" @click="addBot('feishu')">
-                  <Plus class="h-3 w-3 mr-1.5" /> {{ t('admin.settings.addFeishuBot') }}
+                  <Plus class="h-3 w-3 mr-1.5" />
+                  {{ t('admin.settings.addFeishuBot') }}
                 </Button>
               </div>
               <div class="grid md:grid-cols-2 gap-4">
-                <div v-for="(bot, idx) in feishuBots" :key="bot.id" class="p-4 rounded-xl border border-border/50 bg-surface/20 relative group">
-                  <Button variant="ghost" size="sm" class="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:bg-red-500/10" @click="removeBot('feishu', idx)">
+                <div
+                  v-for="(bot, idx) in feishuBots"
+                  :key="bot.id"
+                  class="p-4 rounded-xl border border-border/50 bg-surface/20 relative group"
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:bg-red-500/10"
+                    @click="removeBot('feishu', idx)"
+                  >
                     <Trash2 class="h-4 w-4" />
                   </Button>
                   <div class="grid gap-4 pr-10">
                     <div class="grid gap-2">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.botNameLabel') }}</label>
-                      <Input v-model="bot.name" :placeholder="t('admin.settings.botNameFeishuPlaceholder')" class="h-8 text-sm" />
+                      <label class="text-xs font-medium text-muted-foreground">{{
+                        t('admin.settings.botNameLabel')
+                      }}</label>
+                      <Input
+                        v-model="bot.name"
+                        :placeholder="t('admin.settings.botNameFeishuPlaceholder')"
+                        class="h-8 text-sm"
+                      />
                     </div>
                     <div class="grid gap-2">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.sections.channels.webhookUrl') }}</label>
-                      <Input type="url" v-model="bot.webhook" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..." class="h-8 text-sm" />
+                      <label class="text-xs font-medium text-muted-foreground">{{
+                        t('admin.settings.sections.channels.webhookUrl')
+                      }}</label>
+                      <Input
+                        type="url"
+                        v-model="bot.webhook"
+                        placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..."
+                        class="h-8 text-sm"
+                      />
                     </div>
                     <div class="grid gap-2">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.sections.channels.secret') }}</label>
+                      <label class="text-xs font-medium text-muted-foreground">{{
+                        t('admin.settings.sections.channels.secret')
+                      }}</label>
                       <Input type="password" v-model="bot.secret" placeholder="..." class="h-8 text-sm" />
                     </div>
                     <div>
-                      <Button variant="secondary" size="sm" class="h-8" :disabled="testingBotId === bot.id || !bot.webhook" @click="testBot('feishu', bot.id)">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        class="h-8"
+                        :disabled="testingBotId === bot.id || !bot.webhook"
+                        @click="testBot('feishu', bot.id)"
+                      >
                         <Loader2 v-if="testingBotId === bot.id" class="h-3 w-3 animate-spin mr-1.5" />
                         <CheckCircle2 v-else-if="successBotId === bot.id" class="h-3 w-3 mr-1.5 text-green-500" />
                         <Send v-else class="h-3 w-3 mr-1.5 text-muted-foreground" />
-                        <span :class="{ 'text-green-500': successBotId === bot.id }">{{ successBotId === bot.id ? t('admin.settings.sections.channels.testConnectionSuccess') : t('admin.settings.sections.channels.testConnection') }}</span>
+                        <span :class="{ 'text-green-500': successBotId === bot.id }">{{
+                          successBotId === bot.id
+                            ? t('admin.settings.sections.channels.testConnectionSuccess')
+                            : t('admin.settings.sections.channels.testConnection')
+                        }}</span>
                       </Button>
-                      <p v-if="errorBotId === bot.id" class="mt-2 text-xs text-destructive">{{ t(errorBotMessage) }}</p>
+                      <p v-if="errorBotId === bot.id" class="mt-2 text-xs text-destructive">
+                        {{ t(errorBotMessage) }}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
-              <div v-if="feishuBots.length === 0" class="text-center py-6 text-sm text-muted-foreground border border-dashed border-border/50 rounded-xl">
+              <div
+                v-if="feishuBots.length === 0"
+                class="text-center py-6 text-sm text-muted-foreground border border-dashed border-border/50 rounded-xl"
+              >
                 {{ t('admin.settings.emptyFeishu') }}
               </div>
             </div>
@@ -1026,168 +1379,281 @@ onMounted(async () => {
             <div v-if="activeChannelTab === 'telegram'" class="space-y-4">
               <div class="flex items-center justify-between">
                 <div>
-                  <h4 class="font-medium text-foreground">{{ t('admin.settings.sections.channels.telegram') }}</h4>
-                  <p class="text-xs text-muted-foreground mt-0.5">{{ t('admin.settings.sections.channels.telegramHelp') }}</p>
+                  <h4 class="font-medium text-foreground">
+                    {{ t('admin.settings.sections.channels.telegram') }}
+                  </h4>
+                  <p class="text-xs text-muted-foreground mt-0.5">
+                    {{ t('admin.settings.sections.channels.telegramHelp') }}
+                  </p>
                 </div>
                 <Button variant="secondary" size="sm" class="h-8" @click="addBot('telegram')">
-                  <Plus class="h-3 w-3 mr-1.5" /> {{ t('admin.settings.addTelegramBot') }}
+                  <Plus class="h-3 w-3 mr-1.5" />
+                  {{ t('admin.settings.addTelegramBot') }}
                 </Button>
               </div>
               <div class="grid md:grid-cols-2 gap-4">
-                <div v-for="(bot, idx) in telegramBots" :key="bot.id" class="p-4 rounded-xl border border-border/50 bg-surface/20 relative group">
-                  <Button variant="ghost" size="sm" class="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:bg-red-500/10" @click="removeBot('telegram', idx)">
+                <div
+                  v-for="(bot, idx) in telegramBots"
+                  :key="bot.id"
+                  class="p-4 rounded-xl border border-border/50 bg-surface/20 relative group"
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:bg-red-500/10"
+                    @click="removeBot('telegram', idx)"
+                  >
                     <Trash2 class="h-4 w-4" />
                   </Button>
                   <div class="grid gap-4 pr-10">
                     <div class="grid gap-2">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.botNameLabel') }}</label>
-                      <Input v-model="bot.name" :placeholder="t('admin.settings.botNameTelegramPlaceholder')" class="h-8 text-sm" />
+                      <label class="text-xs font-medium text-muted-foreground">{{
+                        t('admin.settings.botNameLabel')
+                      }}</label>
+                      <Input
+                        v-model="bot.name"
+                        :placeholder="t('admin.settings.botNameTelegramPlaceholder')"
+                        class="h-8 text-sm"
+                      />
                     </div>
                     <div class="grid gap-2">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.sections.channels.botToken') }}</label>
-                      <Input type="password" v-model="bot.botToken" placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz" class="h-8 text-sm" />
+                      <label class="text-xs font-medium text-muted-foreground">{{
+                        t('admin.settings.sections.channels.botToken')
+                      }}</label>
+                      <Input
+                        type="password"
+                        v-model="bot.botToken"
+                        placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+                        class="h-8 text-sm"
+                      />
                     </div>
                     <div class="grid gap-2">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.sections.channels.chatId') }}</label>
+                      <label class="text-xs font-medium text-muted-foreground">{{
+                        t('admin.settings.sections.channels.chatId')
+                      }}</label>
                       <Input type="text" v-model="bot.chatId" placeholder="-1001234567890" class="h-8 text-sm" />
                     </div>
                     <div class="grid gap-2">
-                      <label class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.sections.channels.proxyUrl') }}</label>
-                      <Input type="url" v-model="bot.proxyUrl" :placeholder="t('admin.settings.sections.channels.proxyUrlPlaceholder')" class="h-8 text-sm" />
-                      <p class="text-xs text-muted-foreground">{{ t('admin.settings.sections.channels.proxyUrlHelp') }}</p>
+                      <label class="text-xs font-medium text-muted-foreground">{{
+                        t('admin.settings.sections.channels.proxyUrl')
+                      }}</label>
+                      <Input
+                        type="url"
+                        v-model="bot.proxyUrl"
+                        :placeholder="t('admin.settings.sections.channels.proxyUrlPlaceholder')"
+                        class="h-8 text-sm"
+                      />
+                      <p class="text-xs text-muted-foreground">
+                        {{ t('admin.settings.sections.channels.proxyUrlHelp') }}
+                      </p>
                     </div>
                     <div>
-                      <Button variant="secondary" size="sm" class="h-8" :disabled="testingBotId === bot.id || !bot.botToken || !bot.chatId" @click="testBot('telegram', bot.id)">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        class="h-8"
+                        :disabled="testingBotId === bot.id || !bot.botToken || !bot.chatId"
+                        @click="testBot('telegram', bot.id)"
+                      >
                         <Loader2 v-if="testingBotId === bot.id" class="h-3 w-3 animate-spin mr-1.5" />
                         <CheckCircle2 v-else-if="successBotId === bot.id" class="h-3 w-3 mr-1.5 text-green-500" />
                         <Send v-else class="h-3 w-3 mr-1.5 text-muted-foreground" />
-                        <span :class="{ 'text-green-500': successBotId === bot.id }">{{ successBotId === bot.id ? t('admin.settings.sections.channels.testConnectionSuccess') : t('admin.settings.sections.channels.testConnection') }}</span>
+                        <span :class="{ 'text-green-500': successBotId === bot.id }">{{
+                          successBotId === bot.id
+                            ? t('admin.settings.sections.channels.testConnectionSuccess')
+                            : t('admin.settings.sections.channels.testConnection')
+                        }}</span>
                       </Button>
-                      <p v-if="errorBotId === bot.id" class="mt-2 text-xs text-destructive">{{ t(errorBotMessage) }}</p>
+                      <p v-if="errorBotId === bot.id" class="mt-2 text-xs text-destructive">
+                        {{ t(errorBotMessage) }}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
-              <div v-if="telegramBots.length === 0" class="text-center py-6 text-sm text-muted-foreground border border-dashed border-border/50 rounded-xl">
+              <div
+                v-if="telegramBots.length === 0"
+                class="text-center py-6 text-sm text-muted-foreground border border-dashed border-border/50 rounded-xl"
+              >
                 {{ t('admin.settings.emptyTelegram') }}
               </div>
             </div>
-
           </div>
         </section>
 
         <!-- ============================================ -->
         <!-- Email (SMTP) Tab                              -->
         <!-- ============================================ -->
-        <div v-else-if="activeTab === 'email'" id="settings-panel-email" class="space-y-6" role="tabpanel" aria-labelledby="settings-tab-email">
-        <section class="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden w-full">
-          <div class="p-6 border-b border-border/50 bg-surface/30 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="p-2 bg-blue-500/10 text-blue-500 rounded-xl">
-                <Mail class="w-5 h-5" />
-              </div>
-              <div>
-                <h3 class="text-lg font-semibold text-foreground">{{ t('admin.settings.smtp.title') }}</h3>
-                <p class="text-sm text-muted-foreground">{{ t('admin.settings.smtp.description') }}</p>
-              </div>
-            </div>
-            <Button :disabled="isSavingSmtp || isLoadingSmtp || smtpPortInvalid" @click="saveSmtp" class="min-w-[120px]">
-              <Loader2 v-if="isSavingSmtp" class="h-4 w-4 animate-spin mr-2" />
-              <CheckCircle2 v-else-if="showSuccessSmtp" class="h-4 w-4 mr-2 text-green-400" />
-              <Save v-else class="h-4 w-4 mr-2" />
-              {{ showSuccessSmtp ? t('admin.settings.smtp.saveSuccess') : (isSavingSmtp ? t('admin.settings.saving') : t('admin.settings.save')) }}
-            </Button>
-          </div>
-          <div class="p-6 space-y-5">
-            <p v-if="isLoadingSmtp" class="text-sm text-muted-foreground">{{ t('admin.settings.sections.channels.loading') }}</p>
-            <p v-if="errorSmtp" class="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{{ t(errorSmtp) }}</p>
-
-            <div class="grid md:grid-cols-2 gap-4">
-              <div class="grid gap-2">
-                <label for="smtp-host" class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.smtp.host') }}</label>
-                <Input id="smtp-host" v-model="smtpHost" placeholder="smtp.example.com" class="h-9 text-sm" />
-              </div>
-              <div class="grid gap-2">
-                <label for="smtp-port" class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.smtp.port') }}</label>
-                <Input
-                  id="smtp-port"
-                  type="number"
-                  v-model="smtpPort"
-                  placeholder="587"
-                  class="h-9 text-sm"
-                  :class="{ 'border-destructive focus:border-destructive': smtpPortInvalid }"
-                />
-                <p v-if="smtpPortInvalid" class="text-xs text-destructive">{{ t('admin.settings.smtp.errors.invalidPort') }}</p>
-              </div>
-              <div class="grid gap-2">
-                <label for="smtp-tls-mode" class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.smtp.tlsMode') }}</label>
-                <select
-                  id="smtp-tls-mode"
-                  v-model="smtpTlsMode"
-                  class="flex h-9 w-full rounded-lg border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  <option value="starttls">{{ t('admin.settings.smtp.tlsStarttls') }}</option>
-                  <option value="implicit">{{ t('admin.settings.smtp.tlsImplicit') }}</option>
-                </select>
-              </div>
-              <div class="grid gap-2">
-                <label for="smtp-username" class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.smtp.username') }}</label>
-                <Input id="smtp-username" v-model="smtpUsername" class="h-9 text-sm" />
-              </div>
-              <div class="grid gap-2">
-                <label for="smtp-password" class="text-xs font-medium text-muted-foreground flex items-center gap-2">
-                  {{ t('admin.settings.smtp.password') }}
-                  <span
-                    class="text-[11px] font-normal px-1.5 py-0.5 rounded"
-                    :class="smtpPasswordConfigured ? 'bg-green-500/10 text-green-500' : 'bg-surface-elevated text-muted-foreground'"
-                  >
-                    {{ smtpPasswordConfigured ? t('admin.settings.smtp.passwordConfigured') : t('admin.settings.smtp.passwordNotConfigured') }}
-                  </span>
-                </label>
-                <Input
-                  id="smtp-password"
-                  type="password"
-                  v-model="smtpPassword"
-                  :placeholder="smtpPasswordConfigured ? t('admin.settings.smtp.passwordKeepPlaceholder') : t('admin.settings.smtp.passwordNewPlaceholder')"
-                  class="h-9 text-sm"
-                />
-              </div>
-              <div class="grid gap-2">
-                <label for="smtp-from-email" class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.smtp.fromEmail') }}</label>
-                <Input id="smtp-from-email" type="email" v-model="smtpFromEmail" class="h-9 text-sm" />
-              </div>
-              <div class="grid gap-2">
-                <label for="smtp-from-name" class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.smtp.fromName') }}</label>
-                <Input id="smtp-from-name" v-model="smtpFromName" class="h-9 text-sm" />
-              </div>
-            </div>
-
-            <div class="border-t border-border/40 pt-5 space-y-3">
-              <div class="grid gap-2 max-w-sm">
-                <label for="smtp-test-recipient" class="text-xs font-medium text-muted-foreground">{{ t('admin.settings.smtp.testRecipient') }}</label>
-                <Input id="smtp-test-recipient" type="email" v-model="smtpTestRecipient" class="h-9 text-sm" />
-              </div>
+        <div
+          v-else-if="activeTab === 'email'"
+          id="settings-panel-email"
+          class="space-y-6"
+          role="tabpanel"
+          aria-labelledby="settings-tab-email"
+        >
+          <section class="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden w-full">
+            <div class="p-6 border-b border-border/50 bg-surface/30 flex items-center justify-between">
               <div class="flex items-center gap-3">
-                <Button
-                  variant="secondary"
-                  :disabled="isTestingSmtp || smtpDirty || !smtpTestRecipient.trim()"
-                  @click="testSmtp"
-                >
-                  <Loader2 v-if="isTestingSmtp" class="h-4 w-4 animate-spin mr-2" />
-                  <CheckCircle2 v-else-if="successSmtpTest" class="h-4 w-4 mr-2 text-green-400" />
-                  <Send v-else class="h-4 w-4 mr-2" />
-                  {{ successSmtpTest ? t('admin.settings.smtp.testEmailSuccess') : t('admin.settings.smtp.testEmail') }}
-                </Button>
-                <p v-if="smtpDirty" class="text-xs text-amber-500 flex items-center gap-1.5">
-                  <Info class="w-3.5 h-3.5" />
-                  {{ t('admin.settings.smtp.dirtyBeforeTest') }}
+                <div class="p-2 bg-blue-500/10 text-blue-500 rounded-xl">
+                  <Mail class="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-foreground">
+                    {{ t('admin.settings.smtp.title') }}
+                  </h3>
+                  <p class="text-sm text-muted-foreground">
+                    {{ t('admin.settings.smtp.description') }}
+                  </p>
+                </div>
+              </div>
+              <Button
+                :disabled="isSavingSmtp || isLoadingSmtp || smtpPortInvalid"
+                @click="saveSmtp"
+                class="min-w-[120px]"
+              >
+                <Loader2 v-if="isSavingSmtp" class="h-4 w-4 animate-spin mr-2" />
+                <CheckCircle2 v-else-if="showSuccessSmtp" class="h-4 w-4 mr-2 text-green-400" />
+                <Save v-else class="h-4 w-4 mr-2" />
+                {{
+                  showSuccessSmtp
+                    ? t('admin.settings.smtp.saveSuccess')
+                    : isSavingSmtp
+                      ? t('admin.settings.saving')
+                      : t('admin.settings.save')
+                }}
+              </Button>
+            </div>
+            <div class="p-6 space-y-5">
+              <p v-if="isLoadingSmtp" class="text-sm text-muted-foreground">
+                {{ t('admin.settings.sections.channels.loading') }}
+              </p>
+              <p
+                v-if="errorSmtp"
+                class="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+              >
+                {{ t(errorSmtp) }}
+              </p>
+
+              <div class="grid md:grid-cols-2 gap-4">
+                <div class="grid gap-2">
+                  <label for="smtp-host" class="text-xs font-medium text-muted-foreground">{{
+                    t('admin.settings.smtp.host')
+                  }}</label>
+                  <Input id="smtp-host" v-model="smtpHost" placeholder="smtp.example.com" class="h-9 text-sm" />
+                </div>
+                <div class="grid gap-2">
+                  <label for="smtp-port" class="text-xs font-medium text-muted-foreground">{{
+                    t('admin.settings.smtp.port')
+                  }}</label>
+                  <Input
+                    id="smtp-port"
+                    type="number"
+                    v-model="smtpPort"
+                    placeholder="587"
+                    class="h-9 text-sm"
+                    :class="{
+                      'border-destructive focus:border-destructive': smtpPortInvalid,
+                    }"
+                  />
+                  <p v-if="smtpPortInvalid" class="text-xs text-destructive">
+                    {{ t('admin.settings.smtp.errors.invalidPort') }}
+                  </p>
+                </div>
+                <div class="grid gap-2">
+                  <label for="smtp-tls-mode" class="text-xs font-medium text-muted-foreground">{{
+                    t('admin.settings.smtp.tlsMode')
+                  }}</label>
+                  <UiSelect
+                    id="smtp-tls-mode"
+                    v-model="smtpTlsMode"
+                    class="flex h-9 w-full rounded-lg border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <UiOption value="starttls">{{ t('admin.settings.smtp.tlsStarttls') }}</UiOption>
+                    <UiOption value="implicit">{{ t('admin.settings.smtp.tlsImplicit') }}</UiOption>
+                  </UiSelect>
+                </div>
+                <div class="grid gap-2">
+                  <label for="smtp-username" class="text-xs font-medium text-muted-foreground">{{
+                    t('admin.settings.smtp.username')
+                  }}</label>
+                  <Input id="smtp-username" v-model="smtpUsername" class="h-9 text-sm" />
+                </div>
+                <div class="grid gap-2">
+                  <label for="smtp-password" class="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                    {{ t('admin.settings.smtp.password') }}
+                    <span
+                      class="text-[11px] font-normal px-1.5 py-0.5 rounded"
+                      :class="
+                        smtpPasswordConfigured
+                          ? 'bg-green-500/10 text-green-500'
+                          : 'bg-surface-elevated text-muted-foreground'
+                      "
+                    >
+                      {{
+                        smtpPasswordConfigured
+                          ? t('admin.settings.smtp.passwordConfigured')
+                          : t('admin.settings.smtp.passwordNotConfigured')
+                      }}
+                    </span>
+                  </label>
+                  <Input
+                    id="smtp-password"
+                    type="password"
+                    v-model="smtpPassword"
+                    :placeholder="
+                      smtpPasswordConfigured
+                        ? t('admin.settings.smtp.passwordKeepPlaceholder')
+                        : t('admin.settings.smtp.passwordNewPlaceholder')
+                    "
+                    class="h-9 text-sm"
+                  />
+                </div>
+                <div class="grid gap-2">
+                  <label for="smtp-from-email" class="text-xs font-medium text-muted-foreground">{{
+                    t('admin.settings.smtp.fromEmail')
+                  }}</label>
+                  <Input id="smtp-from-email" type="email" v-model="smtpFromEmail" class="h-9 text-sm" />
+                </div>
+                <div class="grid gap-2">
+                  <label for="smtp-from-name" class="text-xs font-medium text-muted-foreground">{{
+                    t('admin.settings.smtp.fromName')
+                  }}</label>
+                  <Input id="smtp-from-name" v-model="smtpFromName" class="h-9 text-sm" />
+                </div>
+              </div>
+
+              <div class="border-t border-border/40 pt-5 space-y-3">
+                <div class="grid gap-2 max-w-sm">
+                  <label for="smtp-test-recipient" class="text-xs font-medium text-muted-foreground">{{
+                    t('admin.settings.smtp.testRecipient')
+                  }}</label>
+                  <Input id="smtp-test-recipient" type="email" v-model="smtpTestRecipient" class="h-9 text-sm" />
+                </div>
+                <div class="flex items-center gap-3">
+                  <Button
+                    variant="secondary"
+                    :disabled="isTestingSmtp || smtpDirty || !smtpTestRecipient.trim()"
+                    @click="testSmtp"
+                  >
+                    <Loader2 v-if="isTestingSmtp" class="h-4 w-4 animate-spin mr-2" />
+                    <CheckCircle2 v-else-if="successSmtpTest" class="h-4 w-4 mr-2 text-green-400" />
+                    <Send v-else class="h-4 w-4 mr-2" />
+                    {{
+                      successSmtpTest ? t('admin.settings.smtp.testEmailSuccess') : t('admin.settings.smtp.testEmail')
+                    }}
+                  </Button>
+                  <p v-if="smtpDirty" class="text-xs text-amber-500 flex items-center gap-1.5">
+                    <Info class="w-3.5 h-3.5" />
+                    {{ t('admin.settings.smtp.dirtyBeforeTest') }}
+                  </p>
+                </div>
+                <p v-if="errorSmtpTest" class="text-xs text-destructive">
+                  {{ t(errorSmtpTest) }}
                 </p>
               </div>
-              <p v-if="errorSmtpTest" class="text-xs text-destructive">{{ t(errorSmtpTest) }}</p>
             </div>
-          </div>
-        </section>
-        <EmailTemplatesPanel />
+          </section>
+          <EmailTemplatesPanel />
         </div>
       </transition>
     </div>

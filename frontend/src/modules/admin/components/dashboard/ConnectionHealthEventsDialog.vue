@@ -361,64 +361,99 @@ const nextProbeLabel = (card: StatusCard): string => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
+  <UiModal v-if="open" :show="Boolean(open)" :z-index="140" @mask-click="emit('close')" @esc="emit('close')">
+    <div
+      role="dialog"
+      aria-modal="true"
+      :aria-label="t(`${prefix}.events.title`)"
+      class="relative flex h-[min(760px,calc(100dvh-2rem))] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl"
     >
-      <div v-if="open" class="fixed inset-0 z-[140] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-background/60 backdrop-blur-sm" @click="emit('close')" />
+      <div class="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-5 py-4">
+        <div class="flex min-w-0 items-center gap-2.5">
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Activity class="h-4 w-4" />
+          </div>
+          <div class="min-w-0">
+            <h3 class="text-sm font-semibold text-foreground">{{ t(`${prefix}.events.title`) }}</h3>
+            <p class="truncate text-xs text-muted-foreground">
+              {{
+                selectedConnectionId ? t(`${prefix}.eventsDialog.subtitle`) : t(`${prefix}.eventsDialog.globalSubtitle`)
+              }}
+            </p>
+          </div>
+        </div>
+        <UiButton
+          attr-type="button"
+          class="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
+          @click="emit('close')"
+        >
+          <X class="h-4 w-4" />
+        </UiButton>
+      </div>
 
-      <div role="dialog" aria-modal="true" :aria-label="t(`${prefix}.events.title`)" class="relative flex h-[min(760px,calc(100dvh-2rem))] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl">
-          <div class="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-5 py-4">
-            <div class="flex min-w-0 items-center gap-2.5">
-              <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Activity class="h-4 w-4" />
-              </div>
-              <div class="min-w-0">
-                <h3 class="text-sm font-semibold text-foreground">{{ t(`${prefix}.events.title`) }}</h3>
-                <p class="truncate text-xs text-muted-foreground">
-                  {{ selectedConnectionId ? t(`${prefix}.eventsDialog.subtitle`) : t(`${prefix}.eventsDialog.globalSubtitle`) }}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              class="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-elevated hover:text-foreground"
-              @click="emit('close')"
+      <div class="flex-1 overflow-y-auto px-5 py-4">
+        <!-- 链路详情模式：聚焦当前链路，头部横幅展示站点/上游分组/我的分组，提供"查看全部"退回全局。 -->
+        <template v-if="selectedConnectionId">
+          <div
+            v-if="selectedConnectionMeta"
+            class="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5"
+          >
+            <p class="text-xs text-foreground">
+              <span class="font-medium">{{ t(`${prefix}.eventsDialog.viewingConnection`) }}</span>
+              <span class="text-muted-foreground">
+                · {{ selectedConnectionMeta.siteLabel }} · {{ selectedConnectionMeta.upstreamGroupName }} ·
+                {{ selectedConnectionMeta.ownGroupName }}</span
+              >
+            </p>
+            <UiButton
+              attr-type="button"
+              class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+              @click="emit('view-all')"
             >
-              <X class="h-4 w-4" />
-            </button>
+              {{ t(`${prefix}.events.showAll`) }}
+              <ArrowRight class="h-3 w-3" />
+            </UiButton>
           </div>
 
-          <div class="flex-1 overflow-y-auto px-5 py-4">
-            <!-- 链路详情模式：聚焦当前链路，头部横幅展示站点/上游分组/我的分组，提供"查看全部"退回全局。 -->
-            <template v-if="selectedConnectionId">
-              <div
-                v-if="selectedConnectionMeta"
-                class="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5"
-              >
-                <p class="text-xs text-foreground">
-                  <span class="font-medium">{{ t(`${prefix}.eventsDialog.viewingConnection`) }}</span>
-                  <span class="text-muted-foreground"> · {{ selectedConnectionMeta.siteLabel }} · {{ selectedConnectionMeta.upstreamGroupName }} · {{ selectedConnectionMeta.ownGroupName }}</span>
-                </p>
-                <button type="button" class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline" @click="emit('view-all')">
-                  {{ t(`${prefix}.events.showAll`) }}
-                  <ArrowRight class="h-3 w-3" />
-                </button>
-              </div>
+          <div
+            v-if="focusedCards.length === 0"
+            class="flex flex-col items-center justify-center gap-2 py-16 text-center"
+          >
+            <Activity class="h-8 w-8 text-muted-foreground/40" />
+            <p class="text-sm text-muted-foreground">{{ t(`${prefix}.events.emptyForConnection`) }}</p>
+          </div>
+          <div v-else class="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <ConnectionHealthLinkDetailCard
+              v-for="card in focusedCards"
+              :key="card.key"
+              :site-label="siteName(card.upstreamSiteId)"
+              :upstream-group-name="card.upstreamGroupName"
+              :model-name="card.modelName"
+              :provider="card.provider"
+              :state="card.state"
+              :latest-latency-ms="card.latestLatencyMs"
+              :availability-pct="card.availabilityPct"
+              :records="card.records"
+              :next-probe-text="nextProbeLabel(card)"
+              :remote-action="card.remoteAction"
+            />
+          </div>
+        </template>
 
-              <div v-if="focusedCards.length === 0" class="flex flex-col items-center justify-center gap-2 py-16 text-center">
-                <Activity class="h-8 w-8 text-muted-foreground/40" />
-                <p class="text-sm text-muted-foreground">{{ t(`${prefix}.events.emptyForConnection`) }}</p>
-              </div>
-              <div v-else class="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <!-- 全局模式：顶部"探活事件"入口进入，按分组展示最近事件，分组名只作轻量标题。 -->
+        <template v-else>
+          <div v-if="events.length === 0" class="flex flex-col items-center justify-center gap-2 py-16 text-center">
+            <Activity class="h-8 w-8 text-muted-foreground/40" />
+            <p class="text-sm text-muted-foreground">{{ t(`${prefix}.events.empty`) }}</p>
+          </div>
+
+          <div v-else class="space-y-6">
+            <div v-for="group in globalGroups" :key="group.key">
+              <h4 class="mb-2.5 text-sm font-semibold text-foreground">{{ group.name }}</h4>
+
+              <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <ConnectionHealthLinkDetailCard
-                  v-for="card in focusedCards"
+                  v-for="card in group.cards"
                   :key="card.key"
                   :site-label="siteName(card.upstreamSiteId)"
                   :upstream-group-name="card.upstreamGroupName"
@@ -432,41 +467,10 @@ const nextProbeLabel = (card: StatusCard): string => {
                   :remote-action="card.remoteAction"
                 />
               </div>
-            </template>
-
-            <!-- 全局模式：顶部"探活事件"入口进入，按分组展示最近事件，分组名只作轻量标题。 -->
-            <template v-else>
-              <div v-if="events.length === 0" class="flex flex-col items-center justify-center gap-2 py-16 text-center">
-                <Activity class="h-8 w-8 text-muted-foreground/40" />
-                <p class="text-sm text-muted-foreground">{{ t(`${prefix}.events.empty`) }}</p>
-              </div>
-
-              <div v-else class="space-y-6">
-                <div v-for="group in globalGroups" :key="group.key">
-                  <h4 class="mb-2.5 text-sm font-semibold text-foreground">{{ group.name }}</h4>
-
-                  <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <ConnectionHealthLinkDetailCard
-                      v-for="card in group.cards"
-                      :key="card.key"
-                      :site-label="siteName(card.upstreamSiteId)"
-                      :upstream-group-name="card.upstreamGroupName"
-                      :model-name="card.modelName"
-                      :provider="card.provider"
-                      :state="card.state"
-                      :latest-latency-ms="card.latestLatencyMs"
-                      :availability-pct="card.availabilityPct"
-                      :records="card.records"
-                      :next-probe-text="nextProbeLabel(card)"
-                      :remote-action="card.remoteAction"
-                    />
-                  </div>
-                </div>
-              </div>
-            </template>
+            </div>
           </div>
-        </div>
+        </template>
       </div>
-    </Transition>
-  </Teleport>
+    </div>
+  </UiModal>
 </template>
