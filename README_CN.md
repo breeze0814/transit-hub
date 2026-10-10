@@ -166,6 +166,23 @@ docker compose -f deploy/docker-compose.yml up -d
 docker build -f deploy/Dockerfile -t deviseo/transithub:v0.1.15 .
 ```
 
+### 一键提交并发布
+
+先登录你自己的 Docker Hub 账号（或对应的镜像仓库），并指定自己的镜像地址，再运行脚本提交当前改动、推送 GitHub、构建并推送镜像：
+
+```powershell
+docker login
+./scripts/publish.ps1 -ImageName 你的DockerHub用户名/transithub
+```
+
+脚本默认读取 `frontend/package.json` 的版本，推送指定仓库下的 `v<版本>` 和 `latest` 两个 tag。也可以使用 GHCR 等其他 Registry：
+
+```powershell
+./scripts/publish.ps1 -Version 0.1.16 -ImageName ghcr.io/your-org/transithub -Remote origin -Branch main
+```
+
+可将 `DOCKER_IMAGE` 环境变量设为自己的镜像仓库名以省略 `-ImageName`。只推送版本 tag 时追加 `-SkipLatest`；执行前只检查并打印命令时使用 `-WhatIf`。
+
 ## 本地开发
 
 ### 后端

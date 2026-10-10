@@ -166,6 +166,23 @@ Because the Dockerfile is stored in `deploy/` but expects the repository root as
 docker build -f deploy/Dockerfile -t deviseo/transithub:v0.1.15 .
 ```
 
+### One-command commit and publish
+
+Log in to your own Docker Hub account (or another registry) and specify your image repository. The script commits current changes, pushes the Git branch, builds the image, and pushes it:
+
+```powershell
+docker login
+./scripts/publish.ps1 -ImageName your-dockerhub-name/transithub
+```
+
+The script reads the version from `frontend/package.json` and pushes the `v<version>` and `latest` tags to the specified repository. Other registries such as GHCR are supported:
+
+```powershell
+./scripts/publish.ps1 -Version 0.1.16 -ImageName ghcr.io/your-org/transithub -Remote origin -Branch main
+```
+
+Set the `DOCKER_IMAGE` environment variable to your repository name to omit `-ImageName`. Add `-SkipLatest` to push only the version tag, or use `-WhatIf` to validate and print the commands without changing the repository or registry.
+
 ## Local Development
 
 ### Backend
