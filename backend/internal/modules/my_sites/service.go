@@ -849,7 +849,10 @@ func buildAccountPayload(groupType, baseURL, apiKey string, ownGroupIDs []int, a
 	case "openai":
 		payload["platform"] = "openai"
 		credentials["pool_mode"] = true
-		payload["extra"] = map[string]any{"openai_passthrough": true}
+		payload["extra"] = map[string]any{
+			"openai_passthrough":    true,
+			"openai_responses_mode": "force_responses",
+		}
 		payload["concurrency"] = 1000
 	case "anthropic":
 		payload["platform"] = "anthropic"
