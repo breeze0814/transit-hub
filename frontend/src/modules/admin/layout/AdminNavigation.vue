@@ -10,24 +10,24 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <div class="flex h-full flex-col bg-surface-elevated">
-    <div class="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border/40 px-5">
+  <div class="app-sidebar flex h-full flex-col">
+    <div class="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border/40 px-5">
       <div class="flex items-center gap-2">
         <img :src="logoUrl" :alt="t('brand.logoAlt')" width="32" height="32" class="h-8 w-8 object-contain" />
-        <span class="text-xl font-bold text-foreground">{{ t('brand.name') }}</span>
+        <span class="text-base font-semibold text-foreground">{{ t('brand.name') }}</span>
       </div>
       <NButton v-if="mobile" quaternary circle :aria-label="t('admin.layout.closeNavigation')" @click="emit('close')">
         <X class="h-4 w-4" />
       </NButton>
     </div>
-    <nav class="min-h-0 flex-1 overflow-y-auto px-2 py-4" :aria-label="t('brand.name')">
+    <nav class="min-h-0 flex-1 overflow-y-auto px-2 py-3" :aria-label="t('brand.name')">
       <NMenu
         :options="options"
         :value="selected"
         :expanded-keys="expandedKeys"
         :indent="18"
         :root-indent="16"
-        :icon-size="20"
+        :icon-size="14"
         @update:expanded-keys="emit('update:expandedKeys', $event)"
       />
     </nav>

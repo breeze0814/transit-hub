@@ -267,36 +267,30 @@ const handleDeletePolicy = async (policy: ConnectionHealthPolicy) => {
 </script>
 
 <template>
-  <div class="space-y-5">
-    <header class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-      <div class="min-w-0">
-        <h1 class="text-xl font-semibold text-foreground">
-          {{ t('admin.connectionHealth.title') }}
-        </h1>
-        <p class="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-          {{ t('admin.connectionHealth.simplifiedSubtitle') }}
-        </p>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <Button variant="secondary" size="sm" @click="policyListDialogOpen = true">
-          <Settings2 class="h-4 w-4" />
-          {{ t('admin.connectionHealth.topActions.policies') }}
-        </Button>
-        <Button variant="secondary" size="sm" @click="openAllEvents">
-          <Activity class="h-4 w-4" />
-          {{ t('admin.connectionHealth.topActions.events') }}
-        </Button>
-        <Button variant="secondary" size="sm" :disabled="isLoading" @click="refresh">
-          <Loader2 v-if="isLoading" class="h-4 w-4 animate-spin" />
-          <RefreshCw v-else class="h-4 w-4" />
-          {{ t('admin.connectionHealth.refresh') }}
-        </Button>
-      </div>
-    </header>
+  <div class="app-page app-page--connection-health space-y-5">
+    <AppPageHeader :title="t('admin.connectionHealth.title')" :description="t('admin.connectionHealth.simplifiedSubtitle')">
+      <template #actions>
+        <div class="flex flex-wrap items-center gap-2">
+          <Button variant="secondary" size="sm" @click="policyListDialogOpen = true">
+            <Settings2 class="h-4 w-4" />
+            {{ t('admin.connectionHealth.topActions.policies') }}
+          </Button>
+          <Button variant="secondary" size="sm" @click="openAllEvents">
+            <Activity class="h-4 w-4" />
+            {{ t('admin.connectionHealth.topActions.events') }}
+          </Button>
+          <Button variant="secondary" size="sm" :disabled="isLoading" @click="refresh">
+            <Loader2 v-if="isLoading" class="h-4 w-4 animate-spin" />
+            <RefreshCw v-else class="h-4 w-4" />
+            {{ t('admin.connectionHealth.refresh') }}
+          </Button>
+        </div>
+      </template>
+    </AppPageHeader>
 
     <!-- 汇总与主列表使用同一 admin target 数据源。 -->
     <section
-      class="overflow-hidden rounded-lg border border-border/60 bg-card"
+      class="app-panel overflow-hidden rounded-lg border border-border/60 bg-card"
       :aria-label="t('admin.connectionHealth.summaryLabel')"
     >
       <dl class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6">
@@ -358,7 +352,7 @@ const handleDeletePolicy = async (policy: ConnectionHealthPolicy) => {
       {{ readableMessage(errorKey) }}
     </p>
 
-    <section class="overflow-hidden rounded-lg border border-border/60 bg-card text-card-foreground shadow-sm">
+    <section class="app-panel overflow-hidden rounded-lg border border-border/60 bg-card text-card-foreground shadow-sm">
       <div v-if="isLoading && adminGroups.length === 0" class="grid min-h-[34rem] lg:grid-cols-[19rem_minmax(0,1fr)]">
         <div class="space-y-3 border-r border-border/50 p-4">
           <NSkeleton class="h-10 rounded-lg" />

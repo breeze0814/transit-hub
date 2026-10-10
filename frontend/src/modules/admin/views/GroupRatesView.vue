@@ -697,7 +697,8 @@ const historyRowKey = (row: GroupRateHistoryRow, index: number): string =>
 </script>
 
 <template>
-  <div class="flex min-h-[calc(100dvh-8rem)] flex-col space-y-6 lg:h-[calc(100dvh-8rem)]">
+  <div class="app-page app-page--group-rates flex min-h-0 flex-col gap-5 lg:h-[calc(100dvh-7rem)]">
+    <AppPageHeader :title="t('admin.menu.groupRates')" :description="t('ui.pages.groupRates')" />
     <UiTabs
       :value="statusFilter"
       @update:value="handleStatusChange($event)"
@@ -715,7 +716,7 @@ const historyRowKey = (row: GroupRateHistoryRow, index: number): string =>
       </NTab>
     </UiTabs>
 
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+    <div class="app-toolbar flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div class="flex w-full flex-1 flex-col gap-3 sm:flex-row sm:flex-wrap lg:flex-nowrap">
         <div class="relative w-full sm:w-80 max-w-sm">
           <UiInput
@@ -798,7 +799,7 @@ const historyRowKey = (row: GroupRateHistoryRow, index: number): string =>
 
     <div
       id="group-rates-panel"
-      class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm"
+      class="app-panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm"
       role="tabpanel"
     >
       <div v-if="isLoading" class="flex flex-1 items-center justify-center text-muted-foreground">
@@ -1004,7 +1005,7 @@ const historyRowKey = (row: GroupRateHistoryRow, index: number): string =>
         aria-modal="true"
         aria-labelledby="group-rate-history-title"
         tabindex="-1"
-        class="max-h-[calc(100dvh-2rem)] w-full max-w-4xl overflow-hidden overscroll-contain rounded-xl border border-border/50 bg-card shadow-xl"
+        class="app-panel max-h-[calc(100dvh-2rem)] w-full max-w-4xl overflow-hidden overscroll-contain rounded-xl border border-border/50 bg-card shadow-xl"
       >
         <div class="flex items-start justify-between gap-4 border-b border-border/50 p-6">
           <div>
@@ -1141,7 +1142,7 @@ const historyRowKey = (row: GroupRateHistoryRow, index: number): string =>
         aria-modal="true"
         aria-labelledby="group-rate-edit-title"
         tabindex="-1"
-        class="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-xl border border-border/50 bg-card shadow-xl"
+        class="app-panel max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-xl border border-border/50 bg-card shadow-xl"
       >
         <div class="flex items-start justify-between gap-4 border-b border-border/50 p-6">
           <div>
@@ -1196,7 +1197,7 @@ const historyRowKey = (row: GroupRateHistoryRow, index: number): string =>
         aria-modal="true"
         aria-labelledby="group-rate-connect-title"
         tabindex="-1"
-        class="max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-lg border border-border/60 bg-card shadow-xl"
+        class="app-panel max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-lg border border-border/60 bg-card shadow-xl"
       >
         <div class="flex items-start justify-between gap-4 border-b border-border/50 p-6">
           <div>
@@ -1568,7 +1569,7 @@ const historyRowKey = (row: GroupRateHistoryRow, index: number): string =>
         aria-modal="true"
         aria-labelledby="group-rate-disconnect-title"
         tabindex="-1"
-        class="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-xl border border-border/50 bg-card shadow-xl"
+        class="app-panel max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-xl border border-border/50 bg-card shadow-xl"
       >
         <div class="flex items-start justify-between gap-4 border-b border-border/50 p-6">
           <div>

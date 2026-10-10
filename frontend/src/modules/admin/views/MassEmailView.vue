@@ -517,8 +517,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
-    <section class="shrink-0 rounded-lg border border-border/50 bg-card p-3 shadow-sm">
+  <div class="app-page app-page--mass-email flex min-h-0 flex-col gap-5 lg:h-[calc(100dvh-7rem)]">
+    <AppPageHeader :title="t('admin.menu.massEmail')" :description="t('ui.pages.massEmail')" />
+    <section class="app-toolbar shrink-0">
       <div class="flex flex-col gap-3 2xl:flex-row 2xl:items-end 2xl:justify-between">
         <div
           class="grid flex-1 gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(14rem,1.5fr)_minmax(8rem,1fr)_minmax(8rem,1fr)_auto]"
@@ -671,7 +672,7 @@ onBeforeUnmount(() => {
       <span>{{ t(successKey) }}</span>
     </div>
 
-    <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/50 bg-card shadow-sm">
+    <section class="app-panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/50 bg-card shadow-sm">
       <div
         class="flex shrink-0 flex-col gap-2 border-b border-border/50 p-3 sm:flex-row sm:items-center sm:justify-between"
       >
@@ -811,7 +812,7 @@ onBeforeUnmount(() => {
       :aria-labelledby="'mass-email-confirm-title'"
     >
       <div
-        class="flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col rounded-lg border border-border/60 bg-card shadow-xl"
+        class="app-panel flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col rounded-lg border border-border/60 bg-card shadow-xl"
       >
         <div class="flex shrink-0 items-start justify-between gap-4 border-b border-border/50 p-4">
           <div class="min-w-0">
@@ -898,7 +899,7 @@ onBeforeUnmount(() => {
       :aria-labelledby="'mass-email-preview-title'"
     >
       <div
-        class="flex max-h-[calc(100dvh-2rem)] w-full max-w-4xl flex-col rounded-lg border border-border/60 bg-card shadow-xl"
+        class="app-panel flex max-h-[calc(100dvh-2rem)] w-full max-w-4xl flex-col rounded-lg border border-border/60 bg-card shadow-xl"
       >
         <div class="flex shrink-0 items-start justify-between gap-4 border-b border-border/50 p-4">
           <div class="min-w-0">
@@ -939,7 +940,7 @@ onBeforeUnmount(() => {
       :aria-labelledby="'mass-email-batches-title'"
     >
       <div
-        class="flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col rounded-lg border border-border/60 bg-card shadow-xl"
+        class="app-panel flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col rounded-lg border border-border/60 bg-card shadow-xl"
       >
         <div class="flex shrink-0 items-center justify-between gap-4 border-b border-border/50 p-4">
           <h2 id="mass-email-batches-title" class="text-lg font-semibold text-foreground">
@@ -1021,7 +1022,7 @@ onBeforeUnmount(() => {
       :aria-labelledby="'mass-email-detail-title'"
     >
       <div
-        class="flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col rounded-lg border border-border/60 bg-card shadow-xl"
+        class="app-panel flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col rounded-lg border border-border/60 bg-card shadow-xl"
       >
         <div class="flex shrink-0 items-center justify-between gap-4 border-b border-border/50 p-4">
           <h2 id="mass-email-detail-title" class="text-lg font-semibold text-foreground">

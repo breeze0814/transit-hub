@@ -124,8 +124,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex min-h-[calc(100dvh-8rem)] flex-col space-y-6 lg:h-[calc(100dvh-8rem)]">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+  <div class="app-page app-page--group-rate-campaigns flex min-h-0 flex-col gap-5 lg:h-[calc(100dvh-7rem)]">
+    <AppPageHeader :title="t('admin.menu.groupRateCampaigns')" :description="t('ui.pages.groupRateCampaigns')" />
+    <div class="app-toolbar flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div class="flex items-center gap-3 w-full sm:w-auto flex-1">
         <div class="relative w-full sm:w-48">
           <UiSelect
@@ -165,7 +166,7 @@ onMounted(() => {
       <span>{{ t(errorKey) }}</span>
     </div>
 
-    <div class="flex-1 min-h-0 overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm flex flex-col">
+    <div class="app-panel flex-1 min-h-0 overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm flex flex-col">
       <div v-if="isLoading" class="flex flex-1 items-center justify-center text-muted-foreground">
         <Loader2 class="mr-2 h-5 w-5 animate-spin" />
         {{ t('admin.groupRateCampaigns.status.loading') }}

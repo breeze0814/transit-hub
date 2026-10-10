@@ -41,9 +41,9 @@ const deltaIcon = computed(() => {
   <n-card
     :bordered="true"
     size="small"
-    class="min-h-[132px] w-full text-left sm:min-h-[142px]"
+    class="app-stat-card w-full text-left"
     :class="{
-      'cursor-pointer transition-[border-color,box-shadow,transform] hover:border-primary/30 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-px':
+      'cursor-pointer transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background':
         clickable,
     }"
     :role="clickable ? 'button' : undefined"
@@ -59,7 +59,7 @@ const deltaIcon = computed(() => {
           {{ value }}
         </p>
       </div>
-      <div :class="['shrink-0 rounded-lg p-2 sm:p-2.5', iconClass]">
+      <div class="app-stat-icon shrink-0">
         <component :is="icon" class="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
       </div>
     </div>

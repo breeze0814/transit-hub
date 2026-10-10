@@ -95,9 +95,10 @@ const canGoNext = () => page.value < totalPages.value && !isLoading.value
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
+  <div class="app-page app-page--tickets flex flex-col gap-6">
+    <AppPageHeader :title="t('admin.menu.tickets')" :description="t('ui.pages.tickets')" />
     <div class="flex flex-col space-y-4">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+      <div class="app-toolbar flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex items-center gap-3 w-full sm:w-auto flex-1">
           <div class="relative w-full sm:w-48">
             <UiSelect
@@ -134,7 +135,7 @@ const canGoNext = () => page.value < totalPages.value && !isLoading.value
         <span>{{ t(errorKey) }}</span>
       </div>
 
-      <div class="min-h-0 overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm flex flex-col">
+      <div class="app-panel min-h-0 overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm flex flex-col">
         <div v-if="isLoading" class="flex items-center justify-center py-16 text-muted-foreground">
           <Loader2 class="mr-2 h-5 w-5 animate-spin" />
           {{ t('admin.tickets.status.loading') }}

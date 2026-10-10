@@ -639,19 +639,20 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-6xl space-y-6 pb-12">
+  <div class="app-page app-page--settings space-y-6 pb-12">
+    <AppPageHeader :title="t('admin.menu.settings')" :description="t('ui.pages.settings')" />
     <!-- Tab bar -->
     <div
-      class="sticky top-0 z-10 -mx-3 mb-8 flex justify-start border-b border-border/40 bg-background/90 px-3 py-4 backdrop-blur-xl sm:-mx-6 sm:justify-center sm:px-6"
+      class="app-settings-tabs"
     >
       <UiTabs
         :value="activeTab"
         @update:value="activeTab = $event"
         :aria-label="t('admin.menu.settings')"
-        type="segment"
+        type="line"
         size="small"
         :animated="false"
-        class="ui-segmented max-w-full"
+        class="ui-tabs max-w-full"
       >
         <NTab :name="'strategy'" id="settings-tab-strategy">
           <div class="flex items-center gap-2">
@@ -726,7 +727,7 @@ onMounted(async () => {
           </p>
 
           <!-- Card 1: Data Refresh -->
-          <div class="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden">
+          <div class="app-panel rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden">
             <div class="p-5 flex items-start justify-between gap-4">
               <div class="flex items-start gap-3">
                 <div class="p-2 bg-blue-500/10 text-blue-500 rounded-xl shrink-0 mt-0.5">
@@ -764,7 +765,7 @@ onMounted(async () => {
           </div>
 
           <!-- Card 2: Balance Warning -->
-          <div class="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden">
+          <div class="app-panel rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden">
             <div class="p-5 flex items-start justify-between gap-4">
               <div class="flex items-start gap-3">
                 <div class="p-2 bg-amber-500/10 text-amber-500 rounded-xl shrink-0 mt-0.5">
@@ -856,7 +857,7 @@ onMounted(async () => {
           </div>
 
           <!-- Card 3: Multiplier Change Alert -->
-          <div class="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden">
+          <div class="app-panel rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden">
             <div class="p-5 flex items-start justify-between gap-4">
               <div class="flex items-start gap-3">
                 <div class="p-2 bg-purple-500/10 text-purple-500 rounded-xl shrink-0 mt-0.5">
@@ -943,7 +944,7 @@ onMounted(async () => {
         <section
           v-else-if="activeTab === 'channels'"
           id="settings-panel-channels"
-          class="w-full overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm"
+          class="app-panel w-full overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm"
           role="tabpanel"
           aria-labelledby="settings-tab-channels"
         >
@@ -1491,7 +1492,7 @@ onMounted(async () => {
           role="tabpanel"
           aria-labelledby="settings-tab-email"
         >
-          <section class="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden w-full">
+          <section class="app-panel rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden w-full">
             <div class="p-6 border-b border-border/50 bg-surface/30 flex items-center justify-between">
               <div class="flex items-center gap-3">
                 <div class="p-2 bg-blue-500/10 text-blue-500 rounded-xl">

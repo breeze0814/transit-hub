@@ -1,4 +1,5 @@
 export default {
+  ui: { pages: {"dashboard":"Review workspace performance, balances and operational health.","upstream":"Connect and sync upstream sites, balances, keys and connection status.","groupRates":"Manage upstream mappings and review or sync group multipliers.","groupAssociations":"Configure pricing sources, group associations and pricing policies.","groupRateCampaigns":"Schedule group pricing campaigns and monitor their execution.","settings":"Configure sync policies, notification channels and email delivery.","tickets":"Review user feedback, manage ticket status and configure embedded support.","massEmail":"Choose recipients, compose messages and track delivery batches."} },
   common: { confirmation: 'Confirm action', confirm: 'Confirm', cancel: 'Cancel' },
   brand: {
     name: 'TransitHub',

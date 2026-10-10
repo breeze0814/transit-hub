@@ -650,10 +650,11 @@ const lastProbeLabel = computed(() => {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="app-page app-page--dashboard space-y-6">
+    <AppPageHeader :title="t('admin.menu.dashboard')" :description="t('ui.pages.dashboard')" />
     <div
       v-if="adminStatus.authenticated"
-      class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-card px-4 py-2.5 shadow-sm"
+      class="app-panel flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/60 bg-card px-4 py-2.5 shadow-sm"
     >
       <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
         <span class="inline-flex h-2 w-2 shrink-0 rounded-full bg-signal" />
@@ -730,7 +731,7 @@ const lastProbeLabel = computed(() => {
         <div
           v-for="item in 4"
           :key="item"
-          class="min-h-[132px] rounded-lg border border-border/60 bg-card p-4 sm:min-h-[142px] sm:p-5"
+          class="app-panel min-h-[132px] rounded-lg border border-border/60 bg-card p-4 sm:min-h-[142px] sm:p-5"
         >
           <div class="flex items-start justify-between gap-4">
             <div class="flex-1 space-y-3">
@@ -743,11 +744,11 @@ const lastProbeLabel = computed(() => {
         </div>
       </div>
       <div class="grid gap-4 xl:grid-cols-12">
-        <div class="h-[430px] rounded-lg border border-border/60 bg-card p-5 xl:col-span-8">
+        <div class="app-panel h-[430px] rounded-lg border border-border/60 bg-card p-5 xl:col-span-8">
           <NSkeleton class="h-4 w-28 rounded" />
           <NSkeleton class="mt-4 h-[350px] rounded" />
         </div>
-        <div class="h-[430px] rounded-lg border border-border/60 bg-card p-5 xl:col-span-4">
+        <div class="app-panel h-[430px] rounded-lg border border-border/60 bg-card p-5 xl:col-span-4">
           <NSkeleton class="h-4 w-24 rounded" />
           <div class="mt-6 space-y-5">
             <NSkeleton class="h-12 rounded" />
@@ -795,7 +796,7 @@ const lastProbeLabel = computed(() => {
         </section>
 
         <section class="grid gap-4 xl:grid-cols-12">
-          <article class="min-w-0 rounded-lg border border-border/60 bg-card p-4 shadow-sm sm:p-5 xl:col-span-8">
+          <article class="app-panel min-w-0 rounded-lg border border-border/60 bg-card p-4 shadow-sm sm:p-5 xl:col-span-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h2 class="text-base font-semibold text-foreground">
@@ -855,7 +856,7 @@ const lastProbeLabel = computed(() => {
             </div>
           </article>
 
-          <aside class="min-w-0 rounded-lg border border-border/60 bg-card p-4 shadow-sm sm:p-5 xl:col-span-4">
+          <aside class="app-panel min-w-0 rounded-lg border border-border/60 bg-card p-4 shadow-sm sm:p-5 xl:col-span-4">
             <div class="flex items-center justify-between gap-3">
               <div>
                 <h2 class="text-base font-semibold text-foreground">
@@ -946,7 +947,7 @@ const lastProbeLabel = computed(() => {
         </section>
 
         <section class="grid gap-4 xl:grid-cols-12">
-          <article class="min-w-0 rounded-lg border border-border/60 bg-card p-4 shadow-sm sm:p-5 xl:col-span-7">
+          <article class="app-panel min-w-0 rounded-lg border border-border/60 bg-card p-4 shadow-sm sm:p-5 xl:col-span-7">
             <div class="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h2 class="text-base font-semibold text-foreground">
@@ -1002,7 +1003,7 @@ const lastProbeLabel = computed(() => {
           </article>
 
           <aside
-            class="min-w-0 self-start rounded-lg border border-border/60 bg-card p-4 shadow-sm sm:p-5 xl:col-span-5"
+            class="app-panel min-w-0 self-start rounded-lg border border-border/60 bg-card p-4 shadow-sm sm:p-5 xl:col-span-5"
           >
             <div class="flex items-start justify-between gap-3">
               <div>
@@ -1107,7 +1108,7 @@ const lastProbeLabel = computed(() => {
 
     <div
       v-else-if="!adminModalOpen"
-      class="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border/60 bg-card/40 px-6 py-16 text-center"
+      class="app-panel flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-border/60 bg-card/40 px-6 py-16 text-center"
     >
       <div class="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <Lock class="h-6 w-6" />

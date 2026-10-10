@@ -10,6 +10,15 @@ import {
   NPagination,
   NProgress,
   NSkeleton,
+  NCard,
+  NAlert,
+  NEmpty,
+  NResult,
+  NSpin,
+  NForm,
+  NFormItem,
+  NAvatar,
+  NTag,
 } from 'naive-ui'
 import {
   UiButton,
@@ -24,8 +33,10 @@ import {
 } from './components/ui/compat/controls'
 import UiModal from './components/ui/compat/UiModal.vue'
 import UiDrawer from './components/ui/compat/UiDrawer.vue'
+import AppPageHeader from './components/layout/PageHeader.vue'
 import App from './App.vue'
 import './styles/globals.css'
+import './styles/pages.css'
 import { i18n } from './i18n'
 import { router } from './router'
 
@@ -64,6 +75,16 @@ for (const [name, component] of Object.entries({
   NPagination,
   NProgress,
   NSkeleton,
+  NCard,
+  NAlert,
+  NEmpty,
+  NResult,
+  NSpin,
+  NForm,
+  NFormItem,
+  NAvatar,
+  NTag,
+  AppPageHeader,
   UiButton,
   UiInput,
   UiNumberInput,

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useI18n } from 'vue-i18n'
+import { NAlert, NCard, NForm, NFormItem } from 'naive-ui'
 import { ArrowLeft, Mail, KeyRound, ShieldCheck } from 'lucide-vue-next'
 import { registerWithEmail, requestEmailCode, storeAccessToken } from './api/auth'
 
@@ -61,42 +62,24 @@ const handleRegister = async () => {
 </script>
 
 <template>
-  <div class="relative flex min-h-dvh items-center justify-center overflow-hidden bg-background p-4">
-    <!-- Background abstract -->
-    <div class="absolute inset-0 -z-10 overflow-hidden">
-      <div
-        class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/10 blur-[100px] rounded-full"
-      />
-    </div>
-
-    <!-- Back Button -->
-    <UiButton
-      @click="router.push('/')"
-      class="absolute top-8 left-8 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-    >
-      <ArrowLeft class="w-4 h-4" />
-      {{ t('auth.backToHome') }}
-    </UiButton>
-
-    <div class="w-full max-w-md">
-      <div
-        class="bg-surface-elevated border border-border/50 rounded-[2rem] p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden"
-      >
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-primary" />
-
-        <div class="text-center mb-8">
-          <div
-            class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 mb-4"
-          >
-            <span class="text-2xl font-black text-primary leading-none">T</span>
+  <main class="app-auth">
+    <header class="app-auth-toolbar">
+      <UiButton attr-type="button" quaternary @click="router.push('/')">
+        <template #icon><ArrowLeft class="h-4 w-4" /></template>
+        {{ t('auth.backToHome') }}
+      </UiButton>
+      <span class="app-auth-brand">{{ t('brand.name') }}</span>
+    </header>
+    <div class="app-auth-body">
+      <div class="app-auth-form">
+        <NCard class="app-auth-card" :bordered="true">
+          <div class="app-auth-heading">
+            <h1>{{ t('auth.register.title') }}</h1>
+            <p>{{ t('auth.register.subtitle') }}</p>
           </div>
-          <h2 class="text-2xl font-bold tracking-tight text-foreground">{{ t('auth.register.title') }}</h2>
-          <p class="text-sm text-muted-foreground mt-2">{{ t('auth.register.subtitle') }}</p>
-        </div>
 
-        <form @submit.prevent="handleRegister" class="space-y-5">
-          <div class="space-y-2">
-            <label class="text-sm font-medium text-foreground">{{ t('auth.register.email') }}</label>
+          <NForm @submit.prevent="handleRegister">
+            <NFormItem :label="t('auth.register.email')" path="email">
             <div class="relative">
               <Input
                 v-model="email"
@@ -110,10 +93,9 @@ const handleRegister = async () => {
                 <template #prefix><Mail class="w-4 h-4 text-muted-foreground" /></template>
               </Input>
             </div>
-          </div>
+          </NFormItem>
 
-          <div class="space-y-2">
-            <label class="text-sm font-medium text-foreground">{{ t('auth.register.password') }}</label>
+          <NFormItem :label="t('auth.register.password')" path="password">
             <div class="relative">
               <Input
                 v-model="password"
@@ -127,10 +109,9 @@ const handleRegister = async () => {
                 <template #prefix><KeyRound class="w-4 h-4 text-muted-foreground" /></template>
               </Input>
             </div>
-          </div>
+          </NFormItem>
 
-          <div class="space-y-2">
-            <label class="text-sm font-medium text-foreground">{{ t('auth.register.code') }}</label>
+          <NFormItem :label="t('auth.register.code')" path="code">
             <div class="relative">
               <Input
                 v-model="code"
@@ -154,34 +135,33 @@ const handleRegister = async () => {
                 >
               </Input>
             </div>
-          </div>
+          </NFormItem>
 
-          <p
+          <NAlert
             v-if="statusKey"
-            class="rounded-xl border border-signal/20 bg-signal/10 px-4 py-3 text-sm font-medium text-signal"
-          >
-            {{ t(statusKey, statusParams) }}
-          </p>
+            class="mb-4"
+            type="success"
+          >{{ t(statusKey, statusParams) }}</NAlert>
 
-          <p
+          <NAlert
             v-if="errorKey"
-            class="rounded-xl border border-warning/20 bg-warning/10 px-4 py-3 text-sm font-medium text-warning"
-          >
-            {{ t(errorKey) }}
-          </p>
+            class="mb-4"
+            type="error"
+          >{{ t(errorKey) }}</NAlert>
 
           <Button type="submit" class="w-full h-12 text-base font-bold mt-2 shadow-glow" :disabled="isLoading">
             {{ isLoading ? t('auth.register.submitting') : t('auth.register.submit') }}
           </Button>
 
-          <div class="text-center mt-6 text-sm">
+          <div class="mt-5 text-center text-sm">
             <span class="text-muted-foreground">{{ t('auth.register.hasAccount') }}</span>
             <router-link to="/login" class="text-primary hover:text-primary/80 font-medium ml-1 transition-colors">
               {{ t('auth.register.loginLink') }}
             </router-link>
           </div>
-        </form>
+          </NForm>
+        </NCard>
       </div>
     </div>
-  </div>
+  </main>
 </template>

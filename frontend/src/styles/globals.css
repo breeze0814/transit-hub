@@ -4,6 +4,39 @@
 
 @layer base {
   :root {
+    --font-body: 'Segoe UI Variable', 'Segoe UI', 'Microsoft YaHei', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-mono: 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --radius-control: 6px;
+    --radius-panel: 10px;
+    --duration-fast: 160ms;
+    --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --ui-background: #f6f7f9;
+    --ui-card: #fcfcfd;
+    --ui-popover: #fcfcfd;
+    --ui-input: #f6f7f9;
+    --ui-primary: #2c74e3;
+    --ui-primary-hover: #4a88ec;
+    --ui-primary-pressed: #235db6;
+    --ui-success: #23865b;
+    --ui-warning: #a97018;
+    --ui-error: #ce4646;
+    --ui-text: #1a2233;
+    --ui-text-secondary: #43506a;
+    --ui-text-muted: #64708a;
+    --ui-border: #dce0e7;
+    --ui-control-border: #bcc4d1;
+    --ui-divider: #e4e7ed;
+    --ui-table-header: #f3f5f8;
+    --ui-table-hover: #f0f3f7;
+    --color-selected: hsl(var(--primary) / 0.1);
+    --color-selected-hover: hsl(var(--primary) / 0.16);
+    --focus-ring: 0 0 0 2px hsl(var(--primary) / 0.18);
+    --shadow-overlay: 0 12px 40px hsl(222 30% 3% / 0.25);
     --background: 220 24% 97%;
     --foreground: 222 24% 13%;
     --card: 220 22% 99%;
@@ -29,15 +62,33 @@
   }
 
   .dark {
+    --ui-background: #101319;
+    --ui-card: #191d25;
+    --ui-popover: #252b35;
+    --ui-input: #13171e;
+    --ui-primary: #8aaff6;
+    --ui-primary-hover: #abc5f9;
+    --ui-primary-pressed: #6b96e6;
+    --ui-success: #6dcea0;
+    --ui-warning: #e8bc75;
+    --ui-error: #f09595;
+    --ui-text: #edf0f6;
+    --ui-text-secondary: #bdc6d6;
+    --ui-text-muted: #939fb4;
+    --ui-border: #323a48;
+    --ui-control-border: #515d70;
+    --ui-divider: #2b3340;
+    --ui-table-header: #202630;
+    --ui-table-hover: #232b36;
     --background: 222 24% 8%;
     --foreground: 220 24% 96%;
-    --card: 222 22% 11%;
+    --card: 220 19% 12%;
     --card-foreground: 220 24% 96%;
     --surface: 222 21% 13%;
     --surface-elevated: 222 20% 16%;
     --surface-line: 220 17% 21%;
-    --primary: 217 80% 68%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 219 86% 75%;
+    --primary-foreground: 222 24% 10%;
     --accent: 217 78% 60%;
     --accent-foreground: 0 0% 100%;
     --signal: 151 55% 52%;
@@ -49,13 +100,14 @@
     --secondary: 222 18% 17%;
     --secondary-foreground: 220 24% 96%;
     --muted: 222 18% 17%;
-    --muted-foreground: 220 14% 67%;
+    --muted-foreground: 219 18% 64%;
     --border: 220 16% 23%;
   }
 }
 
 html {
   color-scheme: light;
+  overflow-x: clip;
 }
 
 html.dark {
@@ -72,14 +124,8 @@ body {
   margin: 0;
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
-  font-family:
-    'Segoe UI Variable',
-    'Segoe UI',
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  font-family: var(--font-body);
+  overflow-x: clip;
   text-rendering: optimizeLegibility;
   transition:
     color 0.25s ease-out,
@@ -114,12 +160,15 @@ table tbody tr:hover {
 }
 
 /* Naive UI follows the same surface tokens as the existing utility classes. */
-.n-card,
 .n-modal,
 .n-drawer,
 .n-popover,
 .n-dropdown-menu {
-  box-shadow: 0 18px 48px hsl(222 30% 3% / 0.28);
+  box-shadow: var(--shadow-overlay);
+}
+
+.n-card {
+  box-shadow: none;
 }
 
 .n-button {

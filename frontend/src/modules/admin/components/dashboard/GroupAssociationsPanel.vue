@@ -591,7 +591,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="overflow-hidden rounded-lg border border-border/60 bg-card text-card-foreground shadow-sm">
+  <section class="app-panel overflow-hidden rounded-lg border border-border/60 bg-card text-card-foreground shadow-sm">
     <header
       class="flex flex-col gap-4 border-b border-border/60 px-5 py-5 sm:flex-row sm:items-center sm:justify-between"
     >
@@ -1047,7 +1047,7 @@ onBeforeUnmount(() => {
         role="dialog"
         aria-modal="true"
         aria-labelledby="profit-calculator-title"
-        class="flex max-h-[min(44rem,calc(100dvh-2rem))] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-border/60 bg-card text-card-foreground shadow-xl"
+        class="app-panel flex max-h-[min(44rem,calc(100dvh-2rem))] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-border/60 bg-card text-card-foreground shadow-xl"
       >
         <header class="flex items-start justify-between gap-4 border-b border-border/60 px-5 py-4">
           <div class="flex min-w-0 items-start gap-3">
@@ -1356,7 +1356,7 @@ onBeforeUnmount(() => {
       <div
         role="alertdialog"
         aria-modal="true"
-        class="w-full max-w-md rounded-lg border border-border/60 bg-card p-5 shadow-xl"
+        class="app-panel w-full max-w-md rounded-lg border border-border/60 bg-card p-5 shadow-xl"
       >
         <div class="flex items-start gap-3">
           <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-warning/10 text-warning">

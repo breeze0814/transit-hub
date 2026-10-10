@@ -55,47 +55,35 @@ const podiumPositionClass = (rank: number): string => {
 }
 
 const podiumSurfaceClass = (rank: number): string => {
-  if (rank === 1) {
-    return 'border-amber-400/70 bg-amber-50 text-foreground shadow-lg shadow-amber-500/10 hover:-translate-y-1 dark:border-amber-300/40 dark:bg-amber-400/10'
-  }
-  if (rank === 2) {
-    return 'border-zinc-300 bg-zinc-100/80 text-foreground shadow-sm hover:-translate-y-1 hover:border-zinc-400 dark:border-zinc-500 dark:bg-zinc-400/10 dark:hover:border-zinc-400'
-  }
-  return 'border-orange-300 bg-orange-50 text-foreground shadow-sm hover:-translate-y-1 hover:border-orange-400 dark:border-orange-400/40 dark:bg-orange-400/10 dark:hover:border-orange-300/60'
+  if (rank === 1) return 'border-primary/60 bg-card text-foreground shadow-sm'
+  return 'border-border bg-card text-foreground shadow-sm'
 }
 
 const podiumAccentClass = (rank: number): string => {
-  if (rank === 1) return 'text-amber-600 dark:text-amber-300'
-  if (rank === 2) return 'text-zinc-500 dark:text-zinc-300'
-  return 'text-orange-600 dark:text-orange-300'
+  if (rank === 1) return 'text-primary'
+  return 'text-muted-foreground'
 }
 
 const podiumRankClass = (rank: number): string => {
-  if (rank === 1) return 'text-amber-600/35 dark:text-amber-300/30'
-  if (rank === 2) return 'text-zinc-500/35 dark:text-zinc-300/30'
-  return 'text-orange-600/35 dark:text-orange-300/30'
+  if (rank === 1) return 'text-primary/35'
+  return 'text-muted-foreground/35'
 }
 
 const podiumIconClass = (rank: number): string => {
-  if (rank === 1) return 'fill-amber-400/15 text-amber-600 dark:fill-amber-300/10 dark:text-amber-300'
-  if (rank === 2) return 'fill-zinc-400/15 text-zinc-500 dark:fill-zinc-300/10 dark:text-zinc-300'
-  return 'fill-orange-400/15 text-orange-600 dark:fill-orange-300/10 dark:text-orange-300'
+  if (rank === 1) return 'fill-primary/15 text-primary'
+  return 'fill-muted-foreground/10 text-muted-foreground'
 }
 
 const podiumAvatarClass = (rank: number): string => {
   if (rank === 1) {
-    return 'h-20 w-20 bg-amber-100 text-2xl text-amber-800 ring-4 ring-amber-400/30 dark:bg-amber-300/15 dark:text-amber-200 dark:ring-amber-300/20'
+    return 'h-20 w-20 bg-primary/10 text-2xl text-primary ring-4 ring-primary/15'
   }
-  if (rank === 2) {
-    return 'h-16 w-16 bg-zinc-200 text-xl text-zinc-700 ring-4 ring-zinc-400/25 dark:bg-zinc-300/15 dark:text-zinc-200 dark:ring-zinc-300/15'
-  }
-  return 'h-16 w-16 bg-orange-100 text-xl text-orange-800 ring-4 ring-orange-400/25 dark:bg-orange-300/15 dark:text-orange-200 dark:ring-orange-300/15'
+  return 'h-16 w-16 bg-surface text-xl text-foreground ring-4 ring-border/40'
 }
 
 const podiumTableAvatarClass = (rank: number): string => {
-  if (rank === 1) return 'bg-amber-100 text-amber-700 dark:bg-amber-300/15 dark:text-amber-300'
-  if (rank === 2) return 'bg-zinc-200 text-zinc-700 dark:bg-zinc-300/15 dark:text-zinc-300'
-  return 'bg-orange-100 text-orange-700 dark:bg-orange-300/15 dark:text-orange-300'
+  if (rank === 1) return 'bg-primary/10 text-primary'
+  return 'bg-surface text-muted-foreground'
 }
 
 const formatUpdatedAt = (): string => {
@@ -177,7 +165,7 @@ const formatUpdatedAt = (): string => {
     </div>
 
     <template v-else-if="loading && rows.length === 0">
-      <div class="grid grid-cols-2 gap-3 pt-4 md:grid-cols-3 md:gap-5 md:pt-6" aria-hidden="true">
+      <div class="app-leaderboard-podium grid grid-cols-2 gap-3 pt-4 md:grid-cols-3 md:gap-5 md:pt-6" aria-hidden="true">
         <NSkeleton
           class="col-span-2 min-h-80 rounded-lg md:col-span-1 md:col-start-2 md:row-start-1 md:min-h-[22rem]"
         />
@@ -208,7 +196,7 @@ const formatUpdatedAt = (): string => {
     </div>
 
     <template v-else>
-      <ol class="grid grid-cols-2 gap-3 pt-4 md:grid-cols-3 md:gap-5 md:pt-6" :aria-label="t(key('podiumLabel'))">
+      <ol class="app-leaderboard-podium grid grid-cols-2 gap-3 pt-4 md:grid-cols-3 md:gap-5 md:pt-6" :aria-label="t(key('podiumLabel'))">
         <li
           v-for="row in podiumRows"
           :key="row.userId || row.rank"
@@ -293,7 +281,7 @@ const formatUpdatedAt = (): string => {
       </ol>
 
       <section
-        class="mt-6 overflow-hidden rounded-lg border border-border bg-card shadow-sm"
+        class="app-data-panel mt-6 overflow-hidden rounded-lg border border-border bg-card shadow-sm"
         :aria-labelledby="`${titleId}-table`"
       >
         <div

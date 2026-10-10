@@ -221,12 +221,12 @@ const handleAddSubmit = async (form: DashboardAdminLoginForm) => {
 </script>
 
 <template>
-  <div class="flex min-h-dvh flex-col">
+  <div class="app-workspace-page flex min-h-dvh flex-col">
     <!-- 轻量头部：logo + 工具按钮 -->
-    <header class="h-16 shrink-0 flex items-center justify-between px-6 border-b border-border/40">
+    <header class="app-topbar flex h-14 shrink-0 items-center justify-between px-6 border-b border-border/40">
       <div class="flex items-center gap-2">
         <img :src="logoUrl" :alt="t('brand.logoAlt')" width="32" height="32" class="h-8 w-8 shrink-0 object-contain" />
-        <span class="text-xl font-bold tracking-tight text-foreground">{{ t('brand.name') }}</span>
+        <span class="text-base font-semibold tracking-tight text-foreground">{{ t('brand.name') }}</span>
       </div>
 
       <div class="flex items-center gap-2">
@@ -259,7 +259,7 @@ const handleAddSubmit = async (form: DashboardAdminLoginForm) => {
     </header>
 
     <!-- 内容区域 -->
-    <div class="flex-1 flex items-start justify-center pt-12 pb-12 px-6">
+    <div class="app-workspace-content flex-1 flex items-start justify-center">
       <div class="w-full max-w-3xl">
         <div class="mb-10 text-center">
           <h2 class="text-2xl font-bold text-foreground">{{ t('admin.adminAccounts.title') }}</h2>
@@ -286,7 +286,7 @@ const handleAddSubmit = async (form: DashboardAdminLoginForm) => {
           <div
             v-for="account in accounts"
             :key="account.id"
-            class="group relative overflow-hidden rounded-xl border transition-all hover:shadow-lg"
+            class="app-workspace-card group relative overflow-hidden rounded-xl border transition-colors"
             :class="[
               account.current
                 ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
@@ -353,7 +353,7 @@ const handleAddSubmit = async (form: DashboardAdminLoginForm) => {
           <!-- 添加工作区卡片 -->
           <UiButton
             @click="openAddModal"
-            class="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border/60 p-5 text-center transition-all hover:border-primary/40 hover:bg-primary/5 hover:shadow-lg min-h-[160px]"
+            class="app-workspace-card flex min-h-[160px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border/60 p-5 text-center transition-colors hover:border-primary/40 hover:bg-primary/5"
           >
             <div class="flex h-10 w-10 items-center justify-center rounded-full bg-muted/50 text-muted-foreground">
               <Plus class="h-5 w-5" />

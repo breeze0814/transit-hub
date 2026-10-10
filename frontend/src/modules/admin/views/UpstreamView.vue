@@ -305,9 +305,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-[1600px] space-y-6">
+  <div class="app-page app-page--upstream w-full space-y-6">
+    <AppPageHeader :title="t('admin.menu.upstream')" :description="t('ui.pages.upstream')" />
     <!-- Top Action Bar -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="app-toolbar flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div class="flex flex-col gap-3 w-full sm:w-auto">
         <div class="relative w-full sm:w-80">
           <UiInput
@@ -375,7 +376,7 @@ onBeforeUnmount(() => {
       <div
         v-for="site in filteredSites"
         :key="site.id"
-        class="group relative bg-card border border-border/60 rounded-2xl p-5 hover:border-primary/50 transition-colors shadow-sm hover:shadow-md"
+        class="app-panel group relative bg-card border border-border/60 rounded-2xl p-5 hover:border-primary/50 transition-colors shadow-sm hover:shadow-md"
       >
         <!-- Sync Progress Overlay -->
         <div
@@ -590,7 +591,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Table (List) View -->
-    <div v-if="viewMode === 'list'" class="rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm">
+    <div v-if="viewMode === 'list'" class="app-panel rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm">
       <div class="overflow-x-auto">
         <UiTable class="w-full text-sm text-left">
           <thead class="bg-surface/50 text-muted-foreground border-b border-border/40">
@@ -833,7 +834,7 @@ onBeforeUnmount(() => {
         role="alertdialog"
         aria-modal="true"
         :aria-label="t('admin.upstream.delete.title')"
-        class="relative w-full max-w-md overflow-hidden rounded-xl border border-border/70 border-t-2 border-t-destructive bg-card p-6 shadow-2xl"
+        class="app-panel relative w-full max-w-md overflow-hidden rounded-xl border border-border/70 border-t-2 border-t-destructive bg-card p-6 shadow-2xl"
       >
         <div class="flex items-start gap-4">
           <div
@@ -890,7 +891,7 @@ onBeforeUnmount(() => {
         role="dialog"
         aria-modal="true"
         :aria-label="t('admin.upstream.fields.availableGroups')"
-        class="relative max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-hidden rounded-xl border border-border/60 border-t-2 border-t-primary bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        class="app-panel relative max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-hidden rounded-xl border border-border/60 border-t-2 border-t-primary bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-200"
       >
         <div class="flex items-center justify-between px-6 py-5 border-b border-border/40">
           <h3 class="text-lg font-semibold text-foreground">
@@ -972,7 +973,7 @@ onBeforeUnmount(() => {
         role="dialog"
         aria-modal="true"
         :aria-label="t(editingSiteId ? 'admin.upstream.modal.editTitle' : 'admin.upstream.modal.title')"
-        class="relative max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-xl border border-border/60 border-t-2 border-t-primary bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        class="app-panel relative max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-xl border border-border/60 border-t-2 border-t-primary bg-card shadow-2xl animate-in fade-in zoom-in-95 duration-200"
       >
         <div class="flex items-center justify-between px-6 py-5 border-b border-border/40">
           <h3 class="text-lg font-semibold text-foreground">

@@ -1,4 +1,5 @@
 export default {
+  ui: { pages: {"dashboard":"查看当前工作区的经营指标、资金状态与运行情况。","upstream":"连接和同步上游站点，集中查看余额、密钥与连接状态。","groupRates":"管理上游分组与本地分组的映射，核对并同步倍率。","groupAssociations":"为分组配置调价数据源，管理关联关系和自动调价策略。","groupRateCampaigns":"安排分组倍率活动，跟踪执行状态与生效时间。","settings":"配置同步策略、通知渠道与邮件服务。","tickets":"查看和处理用户反馈，管理工单状态与嵌入入口。","massEmail":"筛选收件人、编辑邮件并跟踪批次发送进度。"} },
   common: { confirmation: '确认操作', confirm: '确认', cancel: '取消' },
   brand: {
     name: 'TransitHub',

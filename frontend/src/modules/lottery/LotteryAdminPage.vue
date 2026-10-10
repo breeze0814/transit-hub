@@ -558,52 +558,44 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-[1480px] flex-col gap-4 p-4 sm:p-6 lg:h-[calc(100dvh-8rem)] lg:p-8">
-    <header class="flex flex-col gap-4 border-b border-border/60 pb-4 lg:flex-row lg:items-end lg:justify-between">
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-wide text-primary">
-          {{ t('admin.lottery.eyebrow') }}
-        </p>
-        <h1 class="mt-1 text-2xl font-semibold text-foreground">
-          {{ t('admin.lottery.title') }}
-        </h1>
-        <p class="mt-1 max-w-2xl text-sm text-muted-foreground">
-          {{ t('admin.lottery.subtitle') }}
-        </p>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <div class="relative">
-          <UiSelect
-            v-model="statusFilter"
-            class="h-10 rounded-lg border border-border/70 bg-surface px-3 pr-9 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            :aria-label="t('admin.lottery.filters.status')"
-          >
-            <UiOption value="">{{ t('admin.lottery.filters.all') }}</UiOption>
-            <UiOption v-for="status in campaignStatuses" :key="status" :value="status">{{
-              t(`admin.lottery.status.${status}`)
-            }}</UiOption>
-          </UiSelect>
-        </div>
-        <Tooltip :text="t('admin.lottery.actions.refresh')">
-          <Button
-            variant="secondary"
-            :aria-label="t('admin.lottery.actions.refresh')"
-            :disabled="isLoading"
-            @click="loadCampaigns"
-          >
-            <Loader2 v-if="isLoading" class="h-4 w-4 animate-spin" aria-hidden="true" />
-            <RefreshCw v-else class="h-4 w-4" aria-hidden="true" />
+  <div class="app-page app-page--lottery flex min-w-0 flex-col gap-5">
+    <AppPageHeader :title="t('admin.lottery.title')" :description="t('admin.lottery.subtitle')">
+      <template #actions>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="relative">
+            <UiSelect
+              v-model="statusFilter"
+              class="h-10 rounded-lg border border-border/70 bg-surface px-3 pr-9 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              :aria-label="t('admin.lottery.filters.status')"
+            >
+              <UiOption value="">{{ t('admin.lottery.filters.all') }}</UiOption>
+              <UiOption v-for="status in campaignStatuses" :key="status" :value="status">{{
+                t(`admin.lottery.status.${status}`)
+              }}</UiOption>
+            </UiSelect>
+          </div>
+          <Tooltip :text="t('admin.lottery.actions.refresh')">
+            <Button
+              variant="secondary"
+              :aria-label="t('admin.lottery.actions.refresh')"
+              :disabled="isLoading"
+              @click="loadCampaigns"
+            >
+              <Loader2 v-if="isLoading" class="h-4 w-4 animate-spin" aria-hidden="true" />
+              <RefreshCw v-else class="h-4 w-4" aria-hidden="true" />
+            </Button>
+          </Tooltip>
+          <Button variant="secondary" :disabled="!selectedCampaign" @click="activeTab = 'embed'">
+            <Settings2 class="h-4 w-4" aria-hidden="true" />
+            {{ t('admin.lottery.embed.title') }}
           </Button>
-        </Tooltip>
-        <Button variant="secondary" :disabled="!selectedCampaign" @click="activeTab = 'embed'">
-          <Settings2 class="h-4 w-4" aria-hidden="true" />
-          {{ t('admin.lottery.embed.title') }}
-        </Button>
-        <Button @click="openCreate"
-          ><Plus class="h-4 w-4" aria-hidden="true" />{{ t('admin.lottery.actions.create') }}</Button
-        >
-      </div>
-    </header>
+          <Button @click="openCreate">
+            <Plus class="h-4 w-4" aria-hidden="true" />
+            {{ t('admin.lottery.actions.create') }}
+          </Button>
+        </div>
+      </template>
+    </AppPageHeader>
 
     <div
       v-if="errorKey"
@@ -614,8 +606,8 @@ onMounted(async () => {
       <span>{{ t(errorKey) }}</span>
     </div>
 
-    <div class="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(340px,420px)_1fr]">
-      <section class="rounded-lg border border-border/70 bg-card lg:min-h-0 lg:overflow-hidden">
+    <div class="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(280px,340px)_minmax(0,1fr)]">
+      <section class="app-panel rounded-lg border border-border/70 bg-card lg:min-h-0 lg:overflow-hidden">
         <div class="flex items-center justify-between border-b border-border/60 px-4 py-3">
           <div class="flex items-center gap-2 text-sm font-semibold">
             <Gift class="h-4 w-4 text-primary" aria-hidden="true" />{{ t('admin.lottery.list.title') }}
@@ -841,7 +833,7 @@ onMounted(async () => {
                     <div
                       v-for="prize in selectedPrizes"
                       :key="prize.id"
-                      class="rounded-lg border border-border/60 bg-card p-3 text-sm"
+                      class="app-panel rounded-lg border border-border/60 bg-card p-3 text-sm"
                     >
                       <div class="flex items-center justify-between gap-2">
                         <span class="font-semibold">{{ prize.name }}</span
@@ -1053,7 +1045,7 @@ onMounted(async () => {
                       <p class="text-sm font-medium">
                         {{ t('admin.lottery.embed.sourceOrigin') }}
                       </p>
-                      <p class="mt-1 break-all rounded-lg border border-border/60 bg-card p-3 text-sm">
+                      <p class="app-panel mt-1 break-all rounded-lg border border-border/60 bg-card p-3 text-sm">
                         {{ embedConfig?.sub2apiSourceOrigin || t('admin.lottery.common.empty') }}
                       </p>
                     </div>
@@ -1097,7 +1089,7 @@ onMounted(async () => {
         role="dialog"
         aria-modal="true"
         :aria-label="t(editingId ? 'admin.lottery.form.editTitle' : 'admin.lottery.form.createTitle')"
-        class="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-lg border border-border bg-card shadow-2xl"
+        class="app-panel flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-lg border border-border bg-card shadow-2xl"
         autocomplete="off"
         @submit.prevent="saveCampaign"
       >

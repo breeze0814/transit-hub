@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, h, ref, onMounted, onBeforeUnmount, watch, type Component } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
-import { NDropdown, NDrawer, NDrawerContent, NTag, type MenuOption } from 'naive-ui'
+import { NAvatar, NBreadcrumb, NBreadcrumbItem, NDropdown, NDrawer, NDrawerContent, NTag, type MenuOption } from 'naive-ui'
 import { LayoutDashboard, Network, Settings, LogOut, Globe, Moon, Sun, Percent, Megaphone, ChevronDown, ArrowRightLeft, FolderTree, Link2, Activity, MessageSquare, Github, Mail, Menu, X, Trophy, Gift, Boxes } from 'lucide-vue-next'
 import { useDark, useToggle, useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
@@ -234,7 +234,7 @@ watch(
     >
       {{ t('admin.layout.skipToContent') }}
     </a>
-    <aside v-if="!isWorkspaceSelectionPage && isDesktop" class="w-64 shrink-0 border-r border-border/40">
+    <aside v-if="!isWorkspaceSelectionPage && isDesktop" class="app-admin-sidebar shrink-0 border-r border-border/40">
       <AdminNavigation
         :options="navigationOptions"
         :selected="route.path"
@@ -269,7 +269,7 @@ watch(
       <!-- Header: 工作区选择页不显示业务导航头 -->
       <header
         v-if="!isWorkspaceSelectionPage"
-        class="h-16 shrink-0 border-b border-border/40 bg-surface/50 backdrop-blur-md flex items-center justify-between gap-2 px-3 sm:px-6 sticky top-0 z-30"
+        class="app-topbar flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border/40 px-3 sm:px-6"
       >
         <div class="flex min-w-0 items-center gap-2">
           <UiButton
@@ -282,7 +282,10 @@ watch(
           >
             <Menu class="h-4 w-4" />
           </UiButton>
-          <h1 class="min-w-0 truncate text-base font-semibold sm:text-lg">{{ pageTitle }}</h1>
+          <NBreadcrumb class="min-w-0 truncate">
+            <NBreadcrumbItem class="hidden md:inline" @click="goToAccounts">{{ currentAccount?.displayName || t('brand.name') }}</NBreadcrumbItem>
+            <NBreadcrumbItem>{{ pageTitle }}</NBreadcrumbItem>
+          </NBreadcrumb>
         </div>
 
         <div class="flex min-w-0 shrink-0 items-center gap-1 sm:gap-4">
@@ -353,11 +356,9 @@ watch(
               :aria-label="t('admin.layout.userProfile')"
               :aria-expanded="showUserMenu"
             >
-              <div
-                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-sm font-semibold text-primary"
-              >
+              <NAvatar :size="28" round class="shrink-0">
                 {{ currentAccount?.displayName?.slice(0, 1) || 'T' }}
-              </div>
+              </NAvatar>
               <span
                 v-if="currentAccount"
                 class="text-sm font-medium text-foreground max-w-[120px] truncate hidden sm:inline"
@@ -372,16 +373,13 @@ watch(
       <!-- Content Area -->
       <main
         id="admin-main-content"
-        class="flex-1 overflow-auto"
-        :class="isWorkspaceSelectionPage ? '' : 'p-3 sm:p-6'"
+        class="min-h-0 flex-1 overflow-auto"
+        :class="isWorkspaceSelectionPage ? '' : 'app-main'"
         tabindex="-1"
       >
-        <div
-          v-if="!isWorkspaceSelectionPage && noticeKey"
-          class="mb-4 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm text-warning"
-        >
+        <NAlert v-if="!isWorkspaceSelectionPage && noticeKey" type="warning" class="mb-4">
           {{ t(noticeKey) }}
-        </div>
+        </NAlert>
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">
             <component :is="Component" />
@@ -395,13 +393,12 @@ watch(
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity var(--duration-fast) var(--ease-out);
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-  transform: translateY(10px);
 }
 
 </style>

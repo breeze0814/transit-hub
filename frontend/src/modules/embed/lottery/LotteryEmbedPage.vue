@@ -487,7 +487,7 @@ onBeforeUnmount(() => {
 
 <template>
   <main
-    class="min-h-dvh bg-background px-3 py-3 text-foreground sm:px-5 sm:py-5"
+    class="app-embed min-h-dvh bg-background px-3 py-3 text-foreground sm:px-5 sm:py-5"
     :inert="drawReveal.isVisible.value"
     :aria-hidden="drawReveal.isVisible.value ? 'true' : undefined"
   >
